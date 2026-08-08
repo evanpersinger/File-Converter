@@ -26,9 +26,6 @@ frontend/dist/
 .webui_jobs/
 
 
-
-
-issues.txt
-old_files/
+# testing
 test_files/
 

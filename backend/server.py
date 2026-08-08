@@ -48,7 +48,7 @@ from fastapi.responses import JSONResponse, Response
 
 # Converter modules. Imported as plain top-level modules, which works because this
 # file lives alongside them in backend/ and uvicorn is started with --app-dir backend.
-import combine_files  # noqa: F401  (imported for the stray-import check only)
+import combine_files
 import csv_md
 import csv_xlsx
 import docx_pdf
@@ -398,11 +398,14 @@ REGISTRY: list[Conversion] = [
 ]
 
 # Deliberately NOT registered:
-#   combine_files  - needs 2+ files, this UI uploads exactly one.
-#   jpg -> pdf -> md and images -> combined image -> pdf -> md are the two known-bad
-#     flows in the README. Both are *chains*; this UI does exactly one hop with no way
-#     to feed an output back in, so they're unreachable by construction. Plain
-#     jpg -> pdf stays available, since what's broken is using its output as OCR input.
+#   combine_files  - takes 2+ files, so it does not fit the one-file-in/one-file-out
+#     shape of a Conversion. It has its own endpoint, /api/combine.
+#   The two known-bad flows in CONVERSIONS.md are chains, and a single request does
+#     exactly one hop, so neither is reachable in one click. Note that combining is
+#     no longer a chain you have to assemble by hand: combining images produces the
+#     tall single image that the second of those flows warns about, and re-uploading
+#     it is all it takes. Plain jpg -> pdf stays available, since what breaks is
+#     using its output as OCR input, not the conversion itself.
 
 BY_TARGET_ID = {c.target_id: c for c in REGISTRY}
 
@@ -569,6 +572,83 @@ def convert(file: UploadFile = File(...), target: str = Form(...)):
     return Response(
         content=payload,
         media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.post("/api/combine")
+def combine(files: list[UploadFile] = File(...)):
+    """Combine two or more uploads of one format into a single file.
+
+    Files are merged in the order they arrive, which is the order the user added
+    them. Nothing is re-sorted here or in combine_files() for an explicit file list.
+    """
+    if len(files) < 2:
+        return _error("Pick at least two files to combine.")
+
+    names = [Path(item.filename or "").name for item in files]
+    if not all(names):
+        return _error("One of the uploads has no filename.")
+
+    extensions = sorted({combine_files.canonical_suffix(Path(n)) for n in names})
+    if len(extensions) > 1:
+        return _error(
+            "All files must have the same extension.",
+            f"Got: {', '.join(extensions)}",
+        )
+
+    target_ext = extensions[0]
+    if not target_ext:
+        return _error("Files need an extension so the combined type is known.")
+
+    captured = io.StringIO()
+
+    with _LOCK, job_workspace() as (job_dir, job_in, job_out):
+        staged_names: list[str] = []
+        total = 0
+
+        for item, raw_name in zip(files, names):
+            data = item.file.read(MAX_UPLOAD_BYTES + 1 - total)
+            total += len(data)
+            if total > MAX_UPLOAD_BYTES:
+                return _error(
+                    f"Files add up to more than the "
+                    f"{MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit."
+                )
+            if not data:
+                return _error(f"'{raw_name}' is empty.")
+
+            # Two uploads can share a name, and the second would overwrite the first.
+            # Suffixing keeps both, and keeps the count honest.
+            stem, suffix = Path(raw_name).stem, Path(raw_name).suffix
+            name, counter = raw_name, 2
+            while name in staged_names:
+                name = f"{stem}_{counter}{suffix}"
+                counter += 1
+
+            (job_in / name).write_bytes(data)
+            staged_names.append(name)
+
+        try:
+            with patched(combine_files, setup_directories=lambda: (job_in, job_out)):
+                with redirect_stdout(captured), redirect_stderr(captured):
+                    ok = combine_files.combine_files(staged_names)
+        except Exception as exc:
+            traceback.print_exc()
+            return _error("Combining failed.", f"{exc!r}\n{_tail(captured.getvalue())}",
+                          status=500)
+
+        produced = sorted(p for p in job_out.rglob("*") if p.is_file())
+        if not ok or not produced:
+            # combine_files() reports the reason on stdout and returns False.
+            return _error("Combining failed.", _tail(captured.getvalue()) or None)
+
+        payload = produced[0].read_bytes()
+        filename = produced[0].name
+
+    return Response(
+        content=payload,
+        media_type="application/octet-stream",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 

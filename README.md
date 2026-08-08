@@ -90,7 +90,8 @@ returns a summary of what it did:
 
 `convert_csv_to_markdown`, `convert_csv_to_xlsx`, `convert_xlsx_to_csv`,
 `convert_pdf_to_markdown`, `convert_pdf_to_markdown_openai`, `convert_pptx_to_markdown`,
-`convert_pptx_to_pdf`, `convert_heic_to_jpg`, `convert_heic_to_markdown`,
+`convert_pptx_to_pdf`, `convert_heic_to_jpg`, `convert_heic_to_png`,
+`convert_heic_to_markdown`, `convert_jpg_to_png`, `convert_pdf_to_png`,
 `convert_jpg_to_markdown`, `convert_jpg_to_pdf`, `convert_jpg_to_ocr`,
 `convert_png_to_pdf`, `convert_sql_files`, `convert_screenshots_to_text`
 
@@ -408,6 +409,86 @@ python backend/png_pdf.py
 3. Saves PDF files to the `output/` folder
 4. Shows summary of successful/failed conversions
 
+### jpg_ocr.py
+Converts JPG/JPEG images to plain text (.txt) using OCR. Same OCR as `jpg_md.py`, but
+the output is plain text with no Markdown formatting.
+
+**Usage:**
+```bash
+python backend/jpg_ocr.py
+```
+
+**Python packages:**
+- pytesseract>=0.3.13
+- pillow>=11.3.0
+
+**System requirements:**
+- Tesseract OCR (macOS: `brew install tesseract`)
+
+**How it works:**
+1. Automatically processes ALL JPG/JPEG files in the `input/` folder
+2. Converts each image to RGB and runs Tesseract OCR through a temporary PNG
+3. Saves text files to the `output/` folder
+
+### jpg_png.py
+Converts JPG/JPEG images to PNG.
+
+**Usage:**
+```bash
+python backend/jpg_png.py
+```
+
+**Python packages:**
+- pillow>=11.3.0
+
+**How it works:**
+1. Automatically processes ALL JPG/JPEG files in the `input/` folder
+2. Saves PNG files to the `output/` folder
+
+JPEG carries no transparency, so nothing is lost crossing to PNG. The file will
+usually get larger, since PNG is lossless and JPEG is not.
+
+### heic_png.py
+Converts HEIC images (typically from iPhone/iPad) to PNG.
+
+**Usage:**
+```bash
+python backend/heic_png.py
+```
+
+**Python packages:**
+- pillow>=11.3.0
+- pillow-heif>=0.22.0
+
+**How it works:**
+1. Automatically processes ALL HEIC files in the `input/` folder
+2. Saves PNG files to the `output/` folder
+
+Unlike `heic_jpg.py`, this keeps an alpha channel when the source has one, since PNG
+supports transparency.
+
+### pdf_png.py
+Renders PDF pages to PNG images.
+
+**Usage:**
+```bash
+python backend/pdf_png.py
+```
+
+**Python packages:**
+- pymupdf>=1.26.4
+
+**How it works:**
+1. Automatically processes ALL PDF files in the `input/` folder
+2. Renders every page and saves PNG files to the `output/` folder
+3. A single-page PDF produces `name.png`; a multi-page one produces `name_page1.png`,
+   `name_page2.png`, and so on
+
+**Resolution:** PDF pages are vector, so the output resolution is a choice rather than
+a property of the file. `RENDER_DPI` at the top of the script sets it, defaulting to
+200, which keeps body text sharp on screen without making every page a multi-megabyte
+PNG. In the web UI a multi-page PDF comes back as a zip.
+
 ### pptx_pdf.py
 Converts PowerPoint (.pptx) files to PDF using LibreOffice.
 
@@ -680,19 +761,35 @@ python backend/combine_files.py file1.pdf file2.pdf combined.pdf
 
 **How it works:**
 1. Reads files from the `input/` folder (or specified files)
-2. Automatically detects file types and combines:
+2. Checks that every file has the same extension, and refuses the job if not
+3. Combines according to type:
    - **Images** (JPG, PNG, GIF, BMP, TIFF, WEBP) → stacks vertically into one image (`combined.jpg`)
    - **PDFs** → merges all pages into one PDF (`combined.pdf`)
    - **Text files** → concatenates with separators showing filenames (`combined.txt`)
-3. Saves combined file to the `output/` folder
-4. Skips system files like `.DS_Store`
+4. Saves combined file to the `output/` folder as `combined.<ext>`
+5. Skips system files like `.DS_Store`
+
+**Same extension only.** Every input has to be the same format. Mixing them used to
+succeed while producing junk: a `.jpg` with a `.png` fell into the image branch, and a
+`.pdf` with a `.txt` fell into the text branch and wrote raw PDF bytes into a text
+file. Neither reported a failure. The mix is now rejected up front with a message
+naming what it found. `.jpeg`/`.jpg`, `.tif`/`.tiff` and `.htm`/`.html` count as the
+same format, so those pairs are still allowed.
+
+**Ordering.** Files are combined in the order you pass them, and the web UI passes
+them in the order you added them. Nothing is re-sorted. The one exception is running
+the script with no arguments, where there is no "order you added them" to honour, so
+it falls back to a natural sort of the `input/` folder (Q1, Q2, Q10).
 
 **Features:**
-- Auto-detects output format based on input files (JPG→JPG, PDF→PDF, etc.)
+- Output format matches the input format (JPG→JPG, PDF→PDF, etc.)
 - Images are stacked vertically in a single image file
 - Text files are concatenated with clear file separators
 - PDFs are merged preserving all pages in order
-- Handles mixed file types gracefully
+
+**Note:** stacking many images produces one very tall image, which is the exact input
+that makes the combined-image chain in [CONVERSIONS.md](CONVERSIONS.md) fail. If the
+combined file is headed for Markdown, combine PDFs instead of images.
 
 ## Folder Structure
 ```
@@ -716,6 +813,9 @@ converter/
 │   ├── jpg_pdf.py          # JPG/JPEG to PDF converter
 │   ├── jpg_md.py           # JPG/JPEG to Markdown converter (OCR)
 │   ├── jpg_ocr.py          # JPG/JPEG to plain text converter (OCR)
+│   ├── jpg_png.py          # JPG/JPEG to PNG converter
+│   ├── heic_png.py         # HEIC to PNG converter
+│   ├── pdf_png.py          # PDF pages to PNG images
 │   ├── png_pdf.py          # PNG to PDF converter
 │   ├── combine_files.py    # File combiner (PDFs, images, text)
 │   ├── pptx_pdf.py         # PowerPoint to PDF converter (LibreOffice)
@@ -807,13 +907,40 @@ This means you can update your source file and convert it again to get an update
 
 ## How the Web UI Works
 
-To add a conversion to the UI, add one row to the `REGISTRY` list in
-`backend/server.py`. The frontend hardcodes no formats, it asks `/api/formats`.
+Drop a file on the picker or click to browse, choose an output format from the list on
+the left, and hit Convert. Files can also be combined, see below.
 
-Each request runs in a scratch workspace under `.webui_jobs/<uuid>/`, so the web UI
-never touches your real `backend/input/` and `backend/output/`. Options whose system
-dependency is missing (Tesseract, Pandoc, LaTeX, LibreOffice, `OPENAI_API_KEY`) are
-greyed out with the reason instead of being offered and failing.
+**Adding a conversion** means adding one row to the `REGISTRY` list in
+`backend/server.py`. The frontend hardcodes no formats and no extensions; it asks
+`/api/formats`, and the format buttons are derived from the distinct target extensions
+in the registry. A new converter with a new target extension gets its own button with
+no frontend change at all.
+
+**Isolation.** Each request runs in a scratch workspace under `.webui_jobs/<uuid>/`, so
+the web UI never touches your real `backend/input/` and `backend/output/`.
+
+**Unavailable options** are greyed out with the reason on hover rather than being
+offered and then failing. That covers both a missing system dependency (Tesseract,
+Pandoc, LaTeX, LibreOffice, `OPENAI_API_KEY`) and a format your file simply cannot
+become.
+
+**Extension checking.** When you pick a file it is sent to `/api/detect`, which uses
+libmagic to check whether the contents match the extension on the name. If they
+definitively disagree (a PNG named `.jpg`, a PDF named `.txt`) you get a warning.
+Nothing is blocked and the offered conversions do not change, it is purely advisory.
+
+Only formats libmagic can identify with certainty are checked: PDF, PNG, JPEG, GIF,
+TIFF, BMP, WebP, HEIC, DOCX, XLSX, PPTX. Text formats (`.md`, `.txt`, `.sql`, `.R`,
+`.Rmd`) all look like `text/plain` and cannot be told apart, so they are never
+checked and never produce a false alarm.
+
+**Combining.** Select or drop more than one file and the Combine button activates. All
+files must share one extension, and they are merged in the order you added them, shown
+as a numbered list under the picker with a × to remove any entry. Convert works on
+exactly one file; Combine needs two or more.
+
+**Multi-file output.** Conversions that produce several files (a multi-page
+`pdf_png.py` run, for example) come back as a zip.
 
 ## Supported Conversions
 
@@ -832,14 +959,18 @@ greyed out with the reason instead of being offered and failing.
 | SQL | PDF | `sql_pdf.py` |
 | Jupyter Notebook (.ipynb) | PDF | `ipynb_pdf.py` |
 | HEIC images | JPG | `heic_jpg.py` |
+| HEIC images | PNG | `heic_png.py` |
 | HEIC images | Markdown (.md) | `heic_md.py` |
 | JPG/JPEG images | PDF | `jpg_pdf.py` |
+| JPG/JPEG images | PNG | `jpg_png.py` |
 | PNG images | PDF | `png_pdf.py` |
+| PDF | PNG (one per page) | `pdf_png.py` |
 | JPG/JPEG images | Markdown (.md) | `jpg_md.py` |
+| JPG/JPEG images | Text (.txt) | `jpg_ocr.py` |
 | Screenshots/Images | Text | `ss_txt.py` (`--structured` for tables) |
 | R (.R) | R Markdown (.Rmd) | `R_Rmd.py` |
 | R Markdown (.Rmd) | PDF | `Rmd_pdf.py` |
-| Multiple files (images/PDFs/text) | Single file | `combine_files.py` |
+| Multiple files, one shared extension | Single file | `combine_files.py` |
 | PDF (AI-powered) | Markdown (.md) | `openai_pdf_md.py` |
 
 ## Flows That Don't Work

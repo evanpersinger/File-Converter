@@ -35,8 +35,19 @@ except ImportError:
 
 def natural_sort_key(path):
     """Extract numbers from filename for natural sorting (Q1, Q2, Q10 instead of Q1, Q10, Q2)"""
-    return [int(text) if text.isdigit() else text.lower() 
+    return [int(text) if text.isdigit() else text.lower()
             for text in re.split(r'(\d+)', str(path.name))]
+
+
+# Different spellings of one format, so combining IMG_1.jpg with IMG_2.jpeg is not
+# rejected as a mix on a technicality.
+SUFFIX_ALIASES = {'.jpeg': '.jpg', '.tif': '.tiff', '.htm': '.html'}
+
+
+def canonical_suffix(path: Path) -> str:
+    """Lowercased extension, with alternate spellings folded onto one name."""
+    suffix = path.suffix.lower()
+    return SUFFIX_ALIASES.get(suffix, suffix)
 
 
 # setup file directories
@@ -103,7 +114,20 @@ def combine_files(file_paths: list[str], output_path: str | None = None) -> bool
     if not full_input_paths:
         print("Error: No valid files found to combine")
         return False
-    
+
+    # Everything must be the same format. Without this, a .jpg mixed with a .png fell
+    # into the image branch and a .pdf mixed with a .txt fell into the text branch,
+    # which wrote raw PDF bytes into a text file. Both produced junk without ever
+    # reporting a failure, so the mix is rejected up front instead.
+    #
+    # Order is deliberately left alone: files are combined in the order they were
+    # passed in, which is the order the user added them.
+    extensions = sorted({canonical_suffix(path) for path in full_input_paths})
+    if len(extensions) > 1:
+        print("Error: All files must have the same extension, got: "
+              f"{', '.join(extensions)}")
+        return False
+
     # Detect file types and group by type
     file_types = {}
     for file_path in full_input_paths:

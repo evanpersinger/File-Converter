@@ -36,23 +36,48 @@ export async function convert(file: File, targetId: string): Promise<Converted> 
   const response = await fetch('/api/convert', { method: 'POST', body })
 
   if (!response.ok) {
-    // The backend always reports failures as {error, hint}.
-    let message = `Conversion failed (${response.status}).`
-    let hint: string | null | undefined
-    try {
-      const payload: ApiError = await response.json()
-      message = payload.error ?? message
-      hint = payload.hint
-    } catch {
-      // Non-JSON error body, keep the generic message.
-    }
-    throw new Error(hint ? `${message}\n\n${hint}` : message)
+    throw new Error(await errorMessage(response, 'Conversion failed'))
   }
 
   return {
     blob: await response.blob(),
     filename: filenameFrom(response.headers.get('Content-Disposition')),
   }
+}
+
+/**
+ * Combine several files of one format into one. Order matters: the files are merged
+ * in the order given, which is the order the user added them.
+ */
+export async function combine(files: File[]): Promise<Converted> {
+  const body = new FormData()
+  for (const file of files) {
+    body.append('files', file)
+  }
+
+  const response = await fetch('/api/combine', { method: 'POST', body })
+  if (!response.ok) {
+    throw new Error(await errorMessage(response, 'Combining failed'))
+  }
+
+  return {
+    blob: await response.blob(),
+    filename: filenameFrom(response.headers.get('Content-Disposition')),
+  }
+}
+
+/** Unpack the backend's {error, hint} failure body into one message. */
+async function errorMessage(response: Response, fallback: string): Promise<string> {
+  let message = `${fallback} (${response.status}).`
+  let hint: string | null | undefined
+  try {
+    const payload: ApiError = await response.json()
+    message = payload.error ?? message
+    hint = payload.hint
+  } catch {
+    // Non-JSON error body, keep the generic message.
+  }
+  return hint ? `${message}\n\n${hint}` : message
 }
 
 /** Pull the download name out of `attachment; filename="report.pdf"`. */

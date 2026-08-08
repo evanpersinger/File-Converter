@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
-import { convert, detect, extensionOf, getFormats } from './api'
+import { combine, convert, detect, extensionOf, getFormats } from './api'
 import type { FormatMap, Mismatch } from './types'
 import './App.css'
 
 type Status =
   | { kind: 'idle' }
   | { kind: 'converting' }
+  | { kind: 'combining' }
   | { kind: 'error'; message: string }
 
 interface Result {
@@ -13,22 +14,39 @@ interface Result {
   filename: string
 }
 
+// Different spellings of one format. Kept in step with SUFFIX_ALIASES in
+// combine_files.py, so the button enables exactly when the backend would accept.
+const EXT_ALIASES: Record<string, string> = {
+  '.jpeg': '.jpg',
+  '.tif': '.tiff',
+  '.htm': '.html',
+}
+
+const canonical = (ext: string) => EXT_ALIASES[ext] ?? ext
+
 export default function App() {
   const [formats, setFormats] = useState<FormatMap | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [file, setFile] = useState<File | null>(null)
+  const [files, setFiles] = useState<File[]>([])
   const [target, setTarget] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
   const [result, setResult] = useState<Result | null>(null)
   const [dragging, setDragging] = useState(false)
   const [mismatch, setMismatch] = useState<Mismatch | null>(null)
-  // Which file the newest detect() call was for. Picking a second file while the
-  // first is still in flight would otherwise let the stale answer win.
+  // Which file the newest detect() call was for. Adding a second file while the
+  // first check is in flight would otherwise let the stale answer win.
   const latestPick = useRef<File | null>(null)
 
   useEffect(() => {
     getFormats().then(setFormats).catch((e: Error) => setLoadError(e.message))
   }, [])
+
+  // Release the blob URL when it gets replaced or the page unmounts. Without this,
+  // every conversion would leak its result until a full page reload.
+  useEffect(() => {
+    if (!result) return
+    return () => URL.revokeObjectURL(result.url)
+  }, [result])
 
   // A file dropped anywhere but the picker makes the browser navigate to it, which
   // throws away whatever is on screen. Swallow drops outside the target.
@@ -42,16 +60,17 @@ export default function App() {
     }
   }, [])
 
-  // Release the blob URL when it gets replaced or the page unmounts. Without this,
-  // every conversion would leak its result until a full page reload.
-  useEffect(() => {
-    if (!result) return
-    return () => URL.revokeObjectURL(result.url)
-  }, [result])
-
-  const ext = file ? extensionOf(file.name) : ''
+  // The first file drives the format buttons and the mismatch check. Combining
+  // requires everything to share one extension anyway, so it is representative.
+  const primary = files[0] ?? null
+  const ext = primary ? extensionOf(primary.name) : ''
   const targets = (ext && formats?.byExtension[ext]) || []
   const blocked = (ext && formats?.unavailable[ext]) || []
+
+  const distinctExts = [...new Set(files.map((f) => canonical(extensionOf(f.name))))]
+  const mixedExtensions = files.length >= 2 && distinctExts.length > 1
+  const canCombine = files.length >= 2 && !mixedExtensions
+  const busy = status.kind === 'converting' || status.kind === 'combining'
 
   // Which conversion owns a format button. Registry order decides: pdf->md is
   // registered before pdf->md-ai, and img->txt before img->txt-tables, so the first
@@ -66,30 +85,59 @@ export default function App() {
   const sourceName = ext ? ext.slice(1).toUpperCase() : null
   const targetName = formats?.allFormats.find((f) => f.ext === selected?.ext)?.name ?? null
 
-  function pickFile(picked: File | null) {
-    setFile(picked)
-    setTarget(null)
-    setStatus({ kind: 'idle' })
-    setResult(null)
-    setMismatch(null)
-    latestPick.current = picked
-    if (!picked) return
-
+  function runDetect(file: File) {
+    latestPick.current = file
     // Advisory only. If the check itself fails there is nothing useful to say, so
     // it stays silent rather than showing an error for a file that may convert fine.
-    detect(picked)
+    detect(file)
       .then((d) => {
-        if (latestPick.current === picked) setMismatch(d.mismatch)
+        if (latestPick.current === file) setMismatch(d.mismatch)
       })
       .catch(() => {})
   }
 
-  async function runConversion() {
-    if (!file || !target) return
-    setStatus({ kind: 'converting' })
+  function addFiles(incoming: FileList | null) {
+    const added = Array.from(incoming ?? [])
+    if (added.length === 0) return
+
+    setStatus({ kind: 'idle' })
+    setResult(null)
+
+    // Appending rather than replacing is what makes the order first-come-first-served
+    // across several picks. The backend merges in exactly this order.
+    if (files.length === 0) {
+      setTarget(null)
+      setMismatch(null)
+      runDetect(added[0])
+    }
+    setFiles([...files, ...added])
+  }
+
+  function removeAt(index: number) {
+    const next = files.filter((_, i) => i !== index)
+    setFiles(next)
+    setStatus({ kind: 'idle' })
+    setResult(null)
+
+    if (next.length === 0) {
+      setTarget(null)
+      setMismatch(null)
+      latestPick.current = null
+    } else if (index === 0) {
+      // The first file drives everything, so dropping it invalidates the target and
+      // the mismatch answer.
+      setTarget(null)
+      setMismatch(null)
+      runDetect(next[0])
+    }
+  }
+
+  async function run(action: () => Promise<{ blob: Blob; filename: string }>,
+                     kind: 'converting' | 'combining') {
+    setStatus({ kind })
     setResult(null)
     try {
-      const { blob, filename } = await convert(file, target)
+      const { blob, filename } = await action()
       // Hold the result and let the user click Download, rather than firing the
       // download automatically.
       setResult({ url: URL.createObjectURL(blob), filename })
@@ -99,6 +147,11 @@ export default function App() {
     }
   }
 
+  const pickerLabel =
+    files.length === 0 ? 'Choose or drop a file'
+      : files.length === 1 ? files[0].name
+        : `${files.length} files`
+
   return (
     <div className="layout">
       <aside className="sidebar">
@@ -106,13 +159,13 @@ export default function App() {
 
         <div className="formats">
           {formats?.allFormats.map((f) => {
-            const primary = routesFor(f.ext)[0]
+            const route = routesFor(f.ext)[0]
             const dep = blocked.find((u) => u.ext === f.ext)
             // Every disabled button says why on hover, so a greyed-out list is never
             // just a dead end.
-            const why = primary
+            const why = route
               ? undefined
-              : !file
+              : files.length === 0
                 ? 'Choose a file first'
                 : dep
                   ? dep.hint
@@ -125,9 +178,9 @@ export default function App() {
                 key={f.ext}
                 type="button"
                 className={selected?.ext === f.ext ? 'format selected' : 'format'}
-                disabled={!primary}
+                disabled={!route}
                 title={why}
-                onClick={() => primary && setTarget(primary.id)}
+                onClick={() => route && setTarget(route.id)}
               >
                 {f.name}
               </button>
@@ -135,7 +188,7 @@ export default function App() {
           })}
         </div>
 
-        {file && targets.length === 0 && (
+        {files.length > 0 && targets.length === 0 && (
           <p className="muted">Nothing can convert {ext || 'this file'} yet.</p>
         )}
 
@@ -175,12 +228,39 @@ export default function App() {
           onDrop={(e) => {
             e.preventDefault()
             setDragging(false)
-            pickFile(e.dataTransfer.files?.[0] ?? null)
+            addFiles(e.dataTransfer.files)
           }}
         >
-          <input type="file" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-          <span title={file?.name}>{file ? file.name : 'Choose or drop a file'}</span>
+          <input
+            type="file"
+            multiple
+            onChange={(e) => {
+              addFiles(e.target.files)
+              // Clearing the value lets the same file be picked again after removing
+              // it, which otherwise fires no change event.
+              e.target.value = ''
+            }}
+          />
+          <span title={files.length === 1 ? files[0].name : undefined}>{pickerLabel}</span>
         </label>
+
+        {files.length > 0 && (
+          <ol className="filelist">
+            {files.map((f, i) => (
+              <li key={`${f.name}-${i}`}>
+                <span title={f.name}>{f.name}</span>
+                <button
+                  type="button"
+                  className="remove"
+                  onClick={() => removeAt(i)}
+                  aria-label={`Remove ${f.name}`}
+                >
+                  &times;
+                </button>
+              </li>
+            ))}
+          </ol>
+        )}
 
         {mismatch && (
           <p className="warning">
@@ -188,6 +268,14 @@ export default function App() {
             actually <code>{mismatch.actual}</code>. The conversions offered are the
             ones for <code>{mismatch.named}</code>, so they will likely fail or give
             you garbage. Renaming it to <code>{mismatch.actual}</code> will fix it.
+          </p>
+        )}
+
+        {mixedExtensions && (
+          <p className="warning">
+            Combining needs every file to be the same format, and these are{' '}
+            {distinctExts.join(', ')}. Convert them to a common format first, or
+            remove the odd ones out.
           </p>
         )}
 
@@ -206,13 +294,31 @@ export default function App() {
           </div>
         </div>
 
-        <button
-          className="convert"
-          onClick={runConversion}
-          disabled={!target || status.kind === 'converting'}
-        >
-          {status.kind === 'converting' ? 'Converting...' : 'Convert'}
-        </button>
+        <div className="actions">
+          <button
+            className="action"
+            onClick={() => primary && target && run(() => convert(primary, target), 'converting')}
+            disabled={files.length !== 1 || !target || busy}
+            title={files.length > 1 ? 'Converting takes one file at a time' : undefined}
+          >
+            {status.kind === 'converting' ? 'Converting...' : 'Convert'}
+          </button>
+
+          <button
+            className="action"
+            onClick={() => run(() => combine(files), 'combining')}
+            disabled={!canCombine || busy}
+            title={
+              files.length < 2
+                ? 'Add two or more files to combine'
+                : mixedExtensions
+                  ? 'Every file has to be the same format'
+                  : undefined
+            }
+          >
+            {status.kind === 'combining' ? 'Combining...' : 'Combine files'}
+          </button>
+        </div>
 
         {result && (
           <a className="download" href={result.url} download={result.filename}>
