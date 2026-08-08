@@ -257,18 +257,9 @@ MIME_TO_EXT: dict[str, str] = {
     "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
 }
 
-# Different spellings of one format, normalised before comparing so that a .jpeg
-# holding JPEG bytes is not reported as a mismatch against ".jpg".
-EXT_ALIASES: dict[str, str] = {".jpeg": ".jpg", ".tif": ".tiff", ".htm": ".html"}
 
-
-def canonical_ext(ext: str) -> str:
-    lowered = ext.lower()
-    return EXT_ALIASES.get(lowered, lowered)
-
-
-def sniff_mismatch(path: Path, named_ext: str) -> dict | None:
-    """Compare a file's real type against the extension it arrived with.
+def sniff_mismatch(path: Path) -> dict | None:
+    """Compare a file's real type against the extension in its name.
 
     Returns None when there is nothing to report: either the two agree, or libmagic
     could not pin the contents down. Only definitive contradictions are reported.
@@ -280,9 +271,11 @@ def sniff_mismatch(path: Path, named_ext: str) -> dict | None:
     """
     sniffed = magic.from_file(str(path), mime=True)
     real_ext = MIME_TO_EXT.get(sniffed)
-    if real_ext is None or real_ext == canonical_ext(named_ext):
+    # canonical_suffix folds alternate spellings together, so a .jpeg holding JPEG
+    # bytes is not reported as a mismatch against ".jpg".
+    if real_ext is None or real_ext == combine_files.canonical_suffix(path):
         return None
-    return {"named": named_ext, "actual": real_ext, "mime": sniffed}
+    return {"named": path.suffix.lower(), "actual": real_ext}
 
 
 # ---------------------------------------------------------------------------
@@ -397,15 +390,11 @@ REGISTRY: list[Conversion] = [
                requires=("pandoc",)),
 ]
 
-# Deliberately NOT registered:
-#   combine_files  - takes 2+ files, so it does not fit the one-file-in/one-file-out
-#     shape of a Conversion. It has its own endpoint, /api/combine.
-#   The two known-bad flows in CONVERSIONS.md are chains, and a single request does
-#     exactly one hop, so neither is reachable in one click. Note that combining is
-#     no longer a chain you have to assemble by hand: combining images produces the
-#     tall single image that the second of those flows warns about, and re-uploading
-#     it is all it takes. Plain jpg -> pdf stays available, since what breaks is
-#     using its output as OCR input, not the conversion itself.
+# combine_files is not here on purpose: it takes 2+ files, which is not the
+# one-file-in/one-file-out shape of a Conversion, so it has its own endpoint.
+# The bad flows in CONVERSIONS.md are chains and one request is one hop, so none is
+# reachable in a single click. Combining is the near miss: stacking images produces
+# the tall image the second flow warns about, and re-uploading it finishes the chain.
 
 BY_TARGET_ID = {c.target_id: c for c in REGISTRY}
 
@@ -482,8 +471,6 @@ def detect(file: UploadFile = File(...)):
     if not raw_name:
         return _error("No filename on the upload.")
 
-    ext = Path(raw_name).suffix.lower()
-
     data = file.file.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         return _error(f"File is larger than the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.")
@@ -494,9 +481,9 @@ def detect(file: UploadFile = File(...)):
     with job_workspace() as (_job_dir, job_in, _job_out):
         staged = job_in / raw_name
         staged.write_bytes(data)
-        mismatch = sniff_mismatch(staged, ext)
+        mismatch = sniff_mismatch(staged)
 
-    return {"extension": ext, "mismatch": mismatch}
+    return {"mismatch": mismatch}
 
 
 @app.post("/api/convert")

@@ -41,11 +41,9 @@ export interface ApiError {
 export interface Mismatch {
   named: string
   actual: string
-  mime: string
 }
 
 export interface Detection {
-  extension: string
   /** null when the two agree, or when the contents could not be identified. */
   mismatch: Mismatch | null
 }

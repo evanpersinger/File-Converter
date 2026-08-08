@@ -40,12 +40,9 @@ h2 {
   margin: 0 0 1rem;
 }
 
-/* File picker. The real input is visually hidden, the label is the click target,
-   and the label also handles drops. */
-/* Bigger text, same footprint. The height is pinned and the box centres its own
-   content, so bumping font-size does not grow the button the way padding + line box
-   otherwise would. 5rem matches what the old 1.15rem text and 1.5rem padding
-   rendered to. */
+/* File picker. The real input is visually hidden and the label is both the click
+   target and the drop target. Height is pinned rather than derived from padding, so
+   the text can be resized without the button growing with it. */
 .filepicker {
   display: flex;
   align-items: center;
@@ -198,7 +195,6 @@ h2 {
   font-weight: 500;
 }
 
-/* Convert on the left, Combine on the right, sharing the width evenly. */
 .actions {
   display: flex;
   gap: 1rem;
@@ -212,10 +208,15 @@ h2 {
   font-size: 1.15rem;
 }
 
-/* Selected files, numbered so the merge order is visible rather than implied. */
+/* Selected files, numbered so the merge order is visible rather than implied. The
+   numbers come from a counter rather than the <ol> marker: a row has to be a flex
+   container for the ellipsis and the remove button to line up, and flex replaces the
+   li's list-item display, which suppresses the marker entirely. */
 .filelist {
   margin: 1rem 0 0;
-  padding-left: 1.6rem;
+  padding-left: 0;
+  list-style: none;
+  counter-reset: filelist;
   font-size: 0.8rem;
 }
 
@@ -224,6 +225,15 @@ h2 {
   align-items: center;
   gap: 0.5rem;
   padding: 0.15rem 0;
+}
+
+.filelist li::before {
+  counter-increment: filelist;
+  content: counter(filelist) ".";
+  flex: none;
+  /* Wide enough for two digits, so the filenames stay on one line past nine files. */
+  min-width: 1.4em;
+  opacity: 0.8;
 }
 
 .filelist li span {

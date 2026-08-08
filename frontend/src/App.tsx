@@ -80,8 +80,7 @@ export default function App() {
   const selected = targets.find((t) => t.id === target) ?? null
   const variants = selected ? routesFor(selected.ext).slice(1) : []
 
-  // What the two summary boxes show. The source comes straight off the filename;
-  // the target borrows the registry's display name so both boxes read the same way.
+  // The target borrows the registry's display name so both boxes read the same way.
   const sourceName = ext ? ext.slice(1).toUpperCase() : null
   const targetName = formats?.allFormats.find((f) => f.ext === selected?.ext)?.name ?? null
 

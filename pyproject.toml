@@ -109,13 +109,6 @@ dependencies = [
     "typer>=0.15.4",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
-]
-
 [project.urls]
 Homepage = "https://github.com/evan/converter"
 Repository = "https://github.com/evan/converter"

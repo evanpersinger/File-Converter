@@ -115,13 +115,9 @@ def combine_files(file_paths: list[str], output_path: str | None = None) -> bool
         print("Error: No valid files found to combine")
         return False
 
-    # Everything must be the same format. Without this, a .jpg mixed with a .png fell
-    # into the image branch and a .pdf mixed with a .txt fell into the text branch,
-    # which wrote raw PDF bytes into a text file. Both produced junk without ever
-    # reporting a failure, so the mix is rejected up front instead.
-    #
-    # Order is deliberately left alone: files are combined in the order they were
-    # passed in, which is the order the user added them.
+    # Mixing formats used to write junk and report success: a .pdf among .txt files
+    # landed in the text branch and its raw bytes went straight into the output. The
+    # order of the list is left alone, files combine in the order they were passed.
     extensions = sorted({canonical_suffix(path) for path in full_input_paths})
     if len(extensions) > 1:
         print("Error: All files must have the same extension, got: "
