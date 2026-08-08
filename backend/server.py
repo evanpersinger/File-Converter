@@ -345,6 +345,13 @@ REGISTRY: list[Conversion] = [
 
 BY_TARGET_ID = {c.target_id: c for c in REGISTRY}
 
+# Every distinct output format, for the button grid in the UI. Derived from the
+# registry, so a new converter with a new target extension gets a button for free.
+ALL_FORMATS = [
+    {"ext": ext, "name": ext.lstrip(".").upper()}
+    for ext in sorted({c.target_ext for c in REGISTRY}, key=str.lower)
+]
+
 
 # ---------------------------------------------------------------------------
 # App
@@ -363,6 +370,9 @@ def formats() -> dict:
 
     Probed live rather than cached at import, so installing Tesseract and reloading
     the page is enough to make OCR targets appear.
+
+    Both maps carry the target extension, since the UI groups conversions into one
+    button per output format and needs it to know which button an entry belongs to.
     """
     by_extension: dict[str, list[dict]] = {}
     unavailable: dict[str, list[dict]] = {}
@@ -375,6 +385,7 @@ def formats() -> dict:
                 unavailable.setdefault(ext, []).append({
                     "id": conv.target_id,
                     "label": conv.label,
+                    "ext": conv.target_ext,
                     "reason": reason,
                     "hint": hint,
                 })
@@ -384,7 +395,11 @@ def formats() -> dict:
                     entry["note"] = conv.note
                 by_extension.setdefault(ext, []).append(entry)
 
-    return {"byExtension": by_extension, "unavailable": unavailable}
+    return {
+        "allFormats": ALL_FORMATS,
+        "byExtension": by_extension,
+        "unavailable": unavailable,
+    }
 
 
 def _error(message: str, hint: str | None = None, status: int = 400) -> JSONResponse:

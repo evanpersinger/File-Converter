@@ -10,8 +10,15 @@ export interface Target {
 export interface Unavailable {
   id: string
   label: string
+  ext: string
   reason: string
   hint?: string
+}
+
+/** One output format, rendered as a single button in the grid. */
+export interface FormatOption {
+  ext: string
+  name: string
 }
 
 /**
@@ -20,6 +27,7 @@ export interface Unavailable {
  * by the uploaded file's extension. Adding a converter is a backend-only change.
  */
 export interface FormatMap {
+  allFormats: FormatOption[]
   byExtension: Record<string, Target[]>
   unavailable: Record<string, Unavailable[]>
 }

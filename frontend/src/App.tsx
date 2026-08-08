@@ -36,6 +36,14 @@ export default function App() {
   const targets = (ext && formats?.byExtension[ext]) || []
   const blocked = (ext && formats?.unavailable[ext]) || []
 
+  // Which conversion owns a format button. Registry order decides: pdf->md is
+  // registered before pdf->md-ai, and img->txt before img->txt-tables, so the first
+  // match is always the free local route and anything after it is an opt-in variant.
+  const routesFor = (formatExt: string) => targets.filter((t) => t.ext === formatExt)
+
+  const selected = targets.find((t) => t.id === target) ?? null
+  const variants = selected ? routesFor(selected.ext).slice(1) : []
+
   function pickFile(picked: File | null) {
     setFile(picked)
     setTarget(null)
@@ -59,71 +67,88 @@ export default function App() {
   }
 
   return (
-    <main>
-      <h1>File Converter</h1>
+    <div className="layout">
+      <aside className="sidebar">
+        <h2>Convert to</h2>
 
-      {loadError && <p className="error">{loadError}</p>}
+        <div className="formats">
+          {formats?.allFormats.map((f) => {
+            const primary = routesFor(f.ext)[0]
+            const dep = blocked.find((u) => u.ext === f.ext)
+            // Every disabled button says why on hover, so a greyed-out list is never
+            // just a dead end.
+            const why = primary
+              ? undefined
+              : !file
+                ? 'Choose a file first'
+                : dep
+                  ? dep.hint
+                    ? `${dep.reason}. ${dep.hint}`
+                    : dep.reason
+                  : `Cannot convert ${ext || 'this file'} to ${f.name}.`
 
-      <label className="filepicker">
-        <input type="file" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-        <span>{file ? file.name : 'Choose a file'}</span>
-      </label>
+            return (
+              <button
+                key={f.ext}
+                type="button"
+                className={selected?.ext === f.ext ? 'format selected' : 'format'}
+                disabled={!primary}
+                title={why}
+                onClick={() => primary && setTarget(primary.id)}
+              >
+                {f.name}
+              </button>
+            )
+          })}
+        </div>
 
-      {file && (
-        <section>
-          <h2>Convert to</h2>
+        {file && targets.length === 0 && (
+          <p className="muted">Nothing can convert {ext || 'this file'} yet.</p>
+        )}
 
-          {targets.length === 0 && blocked.length === 0 && (
-            <p className="muted">No conversions available for {ext || 'this file'}.</p>
-          )}
+        {variants.map((v) => (
+          <label key={v.id} className="option">
+            <input
+              type="checkbox"
+              checked={target === v.id}
+              onChange={(e) => setTarget(e.target.checked ? v.id : routesFor(v.ext)[0].id)}
+            />
+            <span>
+              {v.label}
+              {v.note && <em className="note">{v.note}</em>}
+            </span>
+          </label>
+        ))}
 
-          {targets.map((t) => (
-            <label key={t.id} className="option">
-              <input
-                type="radio"
-                name="target"
-                value={t.id}
-                checked={target === t.id}
-                onChange={() => setTarget(t.id)}
-              />
-              <span>
-                {t.label} <code>{t.ext}</code>
-                {t.note && <em className="note">{t.note}</em>}
-              </span>
-            </label>
-          ))}
+        {selected?.note && <p className="muted note">{selected.note}</p>}
+      </aside>
 
-          {blocked.map((u) => (
-            <div key={u.id} className="option disabled">
-              <input type="radio" disabled />
-              <span>
-                {u.label}
-                <em className="note">
-                  {u.reason}
-                  {u.hint && (
-                    <>
-                      {' · '}
-                      <code>{u.hint}</code>
-                    </>
-                  )}
-                </em>
-              </span>
-            </div>
-          ))}
+      <main>
+        <h1>File Converter</h1>
 
-          <button onClick={runConversion} disabled={!target || status.kind === 'converting'}>
-            {status.kind === 'converting' ? 'Converting...' : 'Convert'}
-          </button>
-        </section>
-      )}
+        {loadError && <p className="error">{loadError}</p>}
 
-      {result && (
-        <a className="download" href={result.url} download={result.filename}>
-          Download {result.filename}
-        </a>
-      )}
+        <label className="filepicker">
+          <input type="file" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
+          <span title={file?.name}>{file ? file.name : 'Choose a file'}</span>
+        </label>
 
-      {status.kind === 'error' && <pre className="error">{status.message}</pre>}
-    </main>
+        <button
+          className="convert"
+          onClick={runConversion}
+          disabled={!target || status.kind === 'converting'}
+        >
+          {status.kind === 'converting' ? 'Converting...' : 'Convert'}
+        </button>
+
+        {result && (
+          <a className="download" href={result.url} download={result.filename}>
+            Download {result.filename}
+          </a>
+        )}
+
+        {status.kind === 'error' && <pre className="error">{status.message}</pre>}
+      </main>
+    </div>
   )
 }

@@ -1,7 +1,28 @@
+/* Format list on the left, main column beside it. The whole pair is centred rather
+   than pinned to the viewport edge. align-items: stretch is what lets the divider
+   run the full height of the taller column. */
+.layout {
+  display: flex;
+  align-items: stretch;
+  gap: 3rem;
+  max-width: 54rem;
+  margin: 0 auto;
+  padding: 0 3rem;
+}
+
+.sidebar {
+  flex: none;
+  box-sizing: border-box;
+  width: 10rem;
+  padding: 4rem 1.5rem 4rem 0;
+  border-right: 1px solid var(--border);
+}
+
 main {
+  flex: 1;
+  min-width: 0;
   max-width: 34rem;
-  margin: 4rem auto;
-  padding: 0 1.5rem;
+  margin: 4rem 0;
   text-align: left;
 }
 
@@ -16,22 +37,38 @@ h2 {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  margin: 2rem 0 0.75rem;
+  margin: 0 0 0.75rem;
 }
 
 /* File picker. The real input is visually hidden, the label is the click target.
    Styled as a button, not a drop area, because there is no drop handler, a big
    dashed box would promise drag-and-drop that does not work. */
+/* Bigger text, same footprint. The height is pinned and the box centres its own
+   content, so bumping font-size does not grow the button the way padding + line box
+   otherwise would. 5rem matches what the old 1.15rem text and 1.5rem padding
+   rendered to. */
 .filepicker {
-  display: block;
-  padding: 1.5rem 1rem;
-  font-size: 1.15rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 5rem;
+  padding: 0 1rem;
+  font-size: 1.75rem;
   font-weight: 500;
   border: 3px solid #666;
   border-radius: 6px;
   text-align: center;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+}
+
+/* A long filename would otherwise blow out the fixed height. Full name is on the
+   title attribute. */
+.filepicker span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .filepicker:hover {
@@ -79,9 +116,37 @@ h2 {
   margin-top: 0.15rem;
 }
 
-button {
-  margin-top: 1.5rem;
+/* One button per output format, stacked into a vertical list. */
+.formats {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.format {
   width: 100%;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  border-width: 2px;
+  border-radius: 4px;
+}
+
+.format.selected {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.format.selected:not(:disabled):hover {
+  background: #d4d4d4;
+}
+
+.convert {
+  margin-top: 7rem;
+  width: 100%;
+  padding: 1.1rem 1rem;
+  font-size: 1.35rem;
 }
 
 button:disabled {
