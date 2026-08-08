@@ -40,9 +40,8 @@ h2 {
   margin: 0 0 0.75rem;
 }
 
-/* File picker. The real input is visually hidden, the label is the click target.
-   Styled as a button, not a drop area, because there is no drop handler, a big
-   dashed box would promise drag-and-drop that does not work. */
+/* File picker. The real input is visually hidden, the label is the click target,
+   and the label also handles drops. */
 /* Bigger text, same footprint. The height is pinned and the box centres its own
    content, so bumping font-size does not grow the button the way padding + line box
    otherwise would. 5rem matches what the old 1.15rem text and 1.5rem padding
@@ -71,9 +70,16 @@ h2 {
   white-space: nowrap;
 }
 
-.filepicker:hover {
+.filepicker:hover,
+.filepicker.dragging {
   border-color: var(--text);
   background: var(--shade);
+}
+
+/* Dashed only while a file is over the target, so it reads as "let go here" without
+   the box looking unfinished the rest of the time. */
+.filepicker.dragging {
+  border-style: dashed;
 }
 
 /* Visually hidden rather than display:none, so the input stays keyboard focusable

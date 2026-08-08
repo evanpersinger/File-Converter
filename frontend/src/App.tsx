@@ -20,9 +20,22 @@ export default function App() {
   const [target, setTarget] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
   const [result, setResult] = useState<Result | null>(null)
+  const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
     getFormats().then(setFormats).catch((e: Error) => setLoadError(e.message))
+  }, [])
+
+  // A file dropped anywhere but the picker makes the browser navigate to it, which
+  // throws away whatever is on screen. Swallow drops outside the target.
+  useEffect(() => {
+    const swallow = (e: DragEvent) => e.preventDefault()
+    window.addEventListener('dragover', swallow)
+    window.addEventListener('drop', swallow)
+    return () => {
+      window.removeEventListener('dragover', swallow)
+      window.removeEventListener('drop', swallow)
+    }
   }, [])
 
   // Release the blob URL when it gets replaced or the page unmounts. Without this,
@@ -133,9 +146,25 @@ export default function App() {
 
         {loadError && <p className="error">{loadError}</p>}
 
-        <label className="filepicker">
+        <label
+          className={dragging ? 'filepicker dragging' : 'filepicker'}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragging(true)
+          }}
+          // dragleave also fires when the cursor crosses onto a child, so without the
+          // contains() check the highlight flickers as you move over the label text.
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragging(false)
+          }}
+          onDrop={(e) => {
+            e.preventDefault()
+            setDragging(false)
+            pickFile(e.dataTransfer.files?.[0] ?? null)
+          }}
+        >
           <input type="file" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
-          <span title={file?.name}>{file ? file.name : 'Choose a file'}</span>
+          <span title={file?.name}>{file ? file.name : 'Choose or drop a file'}</span>
         </label>
 
         <div className="transfer">

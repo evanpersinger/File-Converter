@@ -16,7 +16,11 @@
 
   /* Everything downstream is sized in rem, so this one value zooms the whole UI:
      text, the picker, the sidebar width and the column max-width all scale together. */
-  font: 25px/145% var(--sans);
+  /* Unitless line-height, not a percentage. A percentage resolves once here against
+     25px and inherits as a fixed 36px, so anything with a larger font-size (the h1,
+     the file picker) ends up in a line box shorter than its own glyphs and has its
+     descenders clipped. Unitless inherits the ratio and each element recomputes. */
+  font: 25px/1.45 var(--sans);
   /* Dark only. Also makes the native checkbox render dark. */
   color-scheme: dark;
   color: var(--text);
