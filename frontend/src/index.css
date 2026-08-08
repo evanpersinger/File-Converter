@@ -5,7 +5,7 @@
      2.5:1. */
   --bg: #92231f;
   --text: #fff;
-  --border: rgba(255, 255, 255, 0.35);
+  --border: rgba(255, 255, 255, 0.7);
   --code-bg: rgba(0, 0, 0, 0.32);
   /* Translucent rather than a flat dark colour, so hovers darken the photo instead
      of punching an opaque hole in it. */

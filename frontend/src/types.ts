@@ -36,3 +36,16 @@ export interface ApiError {
   error: string
   hint?: string | null
 }
+
+/** A file whose contents contradict its extension. */
+export interface Mismatch {
+  named: string
+  actual: string
+  mime: string
+}
+
+export interface Detection {
+  extension: string
+  /** null when the two agree, or when the contents could not be identified. */
+  mismatch: Mismatch | null
+}

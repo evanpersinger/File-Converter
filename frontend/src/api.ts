@@ -1,9 +1,24 @@
-import type { ApiError, FormatMap } from './types'
+import type { ApiError, Detection, FormatMap } from './types'
 
 export async function getFormats(): Promise<FormatMap> {
   const response = await fetch('/api/formats')
   if (!response.ok) {
     throw new Error('Could not reach the converter backend.')
+  }
+  return response.json()
+}
+
+/**
+ * Ask the backend whether the file's bytes match its extension. Advisory: a failure
+ * here is swallowed by the caller rather than blocking the conversion.
+ */
+export async function detect(file: File): Promise<Detection> {
+  const body = new FormData()
+  body.append('file', file)
+
+  const response = await fetch('/api/detect', { method: 'POST', body })
+  if (!response.ok) {
+    throw new Error('Could not inspect the file.')
   }
   return response.json()
 }

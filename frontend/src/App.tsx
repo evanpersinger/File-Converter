@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { convert, extensionOf, getFormats } from './api'
-import type { FormatMap } from './types'
+import { useEffect, useRef, useState } from 'react'
+import { convert, detect, extensionOf, getFormats } from './api'
+import type { FormatMap, Mismatch } from './types'
 import './App.css'
 
 type Status =
@@ -21,6 +21,10 @@ export default function App() {
   const [status, setStatus] = useState<Status>({ kind: 'idle' })
   const [result, setResult] = useState<Result | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [mismatch, setMismatch] = useState<Mismatch | null>(null)
+  // Which file the newest detect() call was for. Picking a second file while the
+  // first is still in flight would otherwise let the stale answer win.
+  const latestPick = useRef<File | null>(null)
 
   useEffect(() => {
     getFormats().then(setFormats).catch((e: Error) => setLoadError(e.message))
@@ -67,6 +71,17 @@ export default function App() {
     setTarget(null)
     setStatus({ kind: 'idle' })
     setResult(null)
+    setMismatch(null)
+    latestPick.current = picked
+    if (!picked) return
+
+    // Advisory only. If the check itself fails there is nothing useful to say, so
+    // it stays silent rather than showing an error for a file that may convert fine.
+    detect(picked)
+      .then((d) => {
+        if (latestPick.current === picked) setMismatch(d.mismatch)
+      })
+      .catch(() => {})
   }
 
   async function runConversion() {
@@ -166,6 +181,15 @@ export default function App() {
           <input type="file" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
           <span title={file?.name}>{file ? file.name : 'Choose or drop a file'}</span>
         </label>
+
+        {mismatch && (
+          <p className="warning">
+            This file is named <code>{mismatch.named}</code> but its contents are
+            actually <code>{mismatch.actual}</code>. The conversions offered are the
+            ones for <code>{mismatch.named}</code>, so they will likely fail or give
+            you garbage. Renaming it to <code>{mismatch.actual}</code> will fix it.
+          </p>
+        )}
 
         <div className="transfer">
           <div className="slot">

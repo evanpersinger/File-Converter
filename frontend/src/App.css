@@ -233,6 +233,18 @@ button:disabled {
   border-color: #e0e0e0;
 }
 
+/* Same dark panel as .error, with a warm border so it reads as "heads up" rather
+   than "this failed". */
+.warning {
+  margin-top: 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid #ffd98a;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
 /* A red border would vanish against a red page, so failures are carried by a dark
    panel with a pale border instead. */
 .error {

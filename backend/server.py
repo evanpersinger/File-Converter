@@ -41,6 +41,7 @@ from shutil import which
 from typing import Callable, Iterator
 from uuid import uuid4
 
+import magic
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, UploadFile
 from fastapi.responses import JSONResponse, Response
@@ -235,6 +236,56 @@ def missing_deps(requires: tuple[str, ...]) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# Extension verification
+# ---------------------------------------------------------------------------
+# Only formats libmagic identifies with certainty belong here. The text formats
+# (.md, .txt, .sql, .R, .Rmd) all sniff as text/plain and cannot be told apart, and
+# .ipynb is indistinguishable from any other JSON. Their absence is the point: no
+# entry means no claim, which means they can never raise a false alarm.
+MIME_TO_EXT: dict[str, str] = {
+    "application/pdf": ".pdf",
+    "image/png": ".png",
+    "image/jpeg": ".jpg",
+    "image/gif": ".gif",
+    "image/tiff": ".tiff",
+    "image/bmp": ".bmp",
+    "image/webp": ".webp",
+    "image/heic": ".heic",
+    "image/heif": ".heic",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
+}
+
+# Different spellings of one format, normalised before comparing so that a .jpeg
+# holding JPEG bytes is not reported as a mismatch against ".jpg".
+EXT_ALIASES: dict[str, str] = {".jpeg": ".jpg", ".tif": ".tiff", ".htm": ".html"}
+
+
+def canonical_ext(ext: str) -> str:
+    lowered = ext.lower()
+    return EXT_ALIASES.get(lowered, lowered)
+
+
+def sniff_mismatch(path: Path, named_ext: str) -> dict | None:
+    """Compare a file's real type against the extension it arrived with.
+
+    Returns None when there is nothing to report: either the two agree, or libmagic
+    could not pin the contents down. Only definitive contradictions are reported.
+
+    Uses from_file rather than from_buffer deliberately. Buffer sniffing cannot
+    resolve these formats even when handed the entire file: ZIP-based documents
+    (docx/xlsx/pptx) come back as a bare "application/zip", and heic/webp/bmp come
+    back as "application/octet-stream".
+    """
+    sniffed = magic.from_file(str(path), mime=True)
+    real_ext = MIME_TO_EXT.get(sniffed)
+    if real_ext is None or real_ext == canonical_ext(named_ext):
+        return None
+    return {"named": named_ext, "actual": real_ext, "mime": sniffed}
+
+
+# ---------------------------------------------------------------------------
 # Conversion registry
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
@@ -414,6 +465,35 @@ def formats() -> dict:
 
 def _error(message: str, hint: str | None = None, status: int = 400) -> JSONResponse:
     return JSONResponse({"error": message, "hint": hint}, status_code=status)
+
+
+@app.post("/api/detect")
+def detect(file: UploadFile = File(...)):
+    """Report whether an upload's contents match the extension on its name.
+
+    Advisory only. Nothing here blocks a conversion, and the answer never changes
+    which conversions are offered, that stays driven by the extension. No _LOCK
+    needed either, since this touches no module-level converter state.
+    """
+    raw_name = Path(file.filename or "").name  # strips any directory components
+    if not raw_name:
+        return _error("No filename on the upload.")
+
+    ext = Path(raw_name).suffix.lower()
+
+    data = file.file.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        return _error(f"File is larger than the {MAX_UPLOAD_BYTES // (1024 * 1024)} MB limit.")
+    if not data:
+        return _error("The uploaded file is empty.")
+
+    # Staged to disk because libmagic needs a real file to identify these formats.
+    with job_workspace() as (_job_dir, job_in, _job_out):
+        staged = job_in / raw_name
+        staged.write_bytes(data)
+        mismatch = sniff_mismatch(staged, ext)
+
+    return {"extension": ext, "mismatch": mismatch}
 
 
 @app.post("/api/convert")
