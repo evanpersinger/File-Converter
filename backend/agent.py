@@ -21,14 +21,17 @@ from csv_xlsx import convert_csv_to_xlsx
 from docx_pdf import convert_docx_to_pdf
 from heic_jpg import convert_heic_to_jpg
 from heic_md import convert_heic_to_markdown
+from heic_png import convert_heic_to_png
 from html_pdf import convert_html_to_pdf
 from ipynb_pdf import convert_notebook_to_pdf
 from jpg_md import convert_jpg_to_markdown
 from jpg_ocr import convert_jpg_to_ocr
 from jpg_pdf import convert_jpg_to_pdf
+from jpg_png import convert_jpg_to_png
 from md_pdf import convert_md_to_pdf
 from openai_pdf_md import convert_pdf_to_markdown_openai
 from pdf_md import convert_pdf_to_markdown
+from pdf_png import convert_pdf_to_png
 from png_pdf import convert_png_to_pdf
 from pptx_md import convert_pptx_to_markdown
 from pptx_pdf import convert_pptx_to_pdf
@@ -140,9 +143,12 @@ agent = Agent(
         function_tool(convert_pptx_to_pdf),
         function_tool(convert_heic_to_jpg),
         function_tool(convert_heic_to_markdown),
+        function_tool(convert_heic_to_png),
         function_tool(convert_jpg_to_markdown),
         function_tool(convert_jpg_to_pdf),
         function_tool(convert_jpg_to_ocr),
+        function_tool(convert_jpg_to_png),
+        function_tool(convert_pdf_to_png),
         function_tool(convert_png_to_pdf),
         function_tool(convert_sql_files),
         function_tool(convert_screenshots_to_text),

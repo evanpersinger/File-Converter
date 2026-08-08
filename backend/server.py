@@ -53,13 +53,16 @@ import csv_xlsx
 import docx_pdf
 import heic_jpg
 import heic_md
+import heic_png
 import html_pdf
 import ipynb_pdf
 import jpg_md
 import jpg_ocr
 import jpg_pdf
+import jpg_png
 import md_pdf
 import pdf_md
+import pdf_png
 import png_pdf
 import pptx_md
 import pptx_pdf
@@ -90,9 +93,9 @@ _LOCK = threading.Lock()
 # happened, we would be patching a different copy of the module than the one doing
 # the work, and conversions would silently write into site-packages. Fail loudly.
 _CONVERTER_MODULES = [
-    csv_md, csv_xlsx, docx_pdf, heic_jpg, heic_md, html_pdf, ipynb_pdf, jpg_md,
-    jpg_ocr, jpg_pdf, md_pdf, pdf_md, png_pdf, pptx_md, pptx_pdf,
-    R_Rmd, Rmd_pdf, sql_pdf, ss_txt, txt_pdf, xlsx_csv, combine_files,
+    csv_md, csv_xlsx, docx_pdf, heic_jpg, heic_md, heic_png, html_pdf, ipynb_pdf,
+    jpg_md, jpg_ocr, jpg_pdf, jpg_png, md_pdf, pdf_md, pdf_png, png_pdf, pptx_md,
+    pptx_pdf, R_Rmd, Rmd_pdf, sql_pdf, ss_txt, txt_pdf, xlsx_csv, combine_files,
 ]
 _stray = [m.__name__ for m in _CONVERTER_MODULES
           if Path(m.__file__).resolve().parent != BACKEND]
@@ -261,6 +264,9 @@ REGISTRY: list[Conversion] = [
     Conversion((".pdf",), "pdf->md", "Markdown", ".md",
                via_globals(pdf_md, lambda s: pdf_md.convert_pdf_to_markdown()),
                requires=("tesseract",)),
+    Conversion((".pdf",), "pdf->png", "PNG", ".png",
+               via_globals(pdf_png, lambda s: pdf_png.convert_pdf_to_png()),
+               note="One PNG per page. Multi-page PDFs come back as a zip."),
     Conversion((".pdf",), "pdf->md-ai", "Markdown (AI, costs money)", ".md",
                openai_pdf_invoke,
                requires=("openai_key",),
@@ -279,6 +285,8 @@ REGISTRY: list[Conversion] = [
     # --- images --------------------------------------------------------------
     Conversion((".heic",), "heic->jpg", "JPG", ".jpg",
                via_globals(heic_jpg, lambda s: heic_jpg.convert_heic_to_jpg())),
+    Conversion((".heic",), "heic->png", "PNG", ".png",
+               via_globals(heic_png, lambda s: heic_png.convert_heic_to_png())),
     Conversion((".heic",), "heic->md", "Markdown", ".md",
                via_globals(heic_md, lambda s: heic_md.convert_heic_to_markdown()),
                requires=("tesseract",)),
@@ -290,6 +298,8 @@ REGISTRY: list[Conversion] = [
                requires=("tesseract",)),
     Conversion((".jpg", ".jpeg"), "jpg->pdf", "PDF", ".pdf",
                via_globals(jpg_pdf, lambda s: jpg_pdf.convert_jpg_to_pdf())),
+    Conversion((".jpg", ".jpeg"), "jpg->png", "PNG", ".png",
+               via_globals(jpg_png, lambda s: jpg_png.convert_jpg_to_png())),
     Conversion((".png",), "png->pdf", "PDF", ".pdf",
                via_globals(png_pdf, lambda s: png_pdf.convert_png_to_pdf())),
 

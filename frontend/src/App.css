@@ -13,7 +13,7 @@
 .sidebar {
   flex: none;
   box-sizing: border-box;
-  width: 9rem;
+  width: 10rem;
   padding: 2.5rem 1.25rem 2.5rem 0;
   border-right: 1px solid var(--border);
 }
@@ -122,17 +122,18 @@ h2 {
   margin-top: 0.15rem;
 }
 
-/* One button per output format, stacked into a vertical list. */
+/* One button per output format, two to a row. Extension names are three or four
+   characters, so a full-width button was mostly empty space. */
 .formats {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.4rem;
 }
 
 .format {
   width: 100%;
-  padding: 0.35rem 0.6rem;
-  font-size: 0.8rem;
+  padding: 0.5rem 0.4rem;
+  font-size: 0.85rem;
   font-family: var(--mono);
   letter-spacing: 0.04em;
   border-width: 2px;
