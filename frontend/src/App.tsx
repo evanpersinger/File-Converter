@@ -44,6 +44,11 @@ export default function App() {
   const selected = targets.find((t) => t.id === target) ?? null
   const variants = selected ? routesFor(selected.ext).slice(1) : []
 
+  // What the two summary boxes show. The source comes straight off the filename;
+  // the target borrows the registry's display name so both boxes read the same way.
+  const sourceName = ext ? ext.slice(1).toUpperCase() : null
+  const targetName = formats?.allFormats.find((f) => f.ext === selected?.ext)?.name ?? null
+
   function pickFile(picked: File | null) {
     setFile(picked)
     setTarget(null)
@@ -132,6 +137,21 @@ export default function App() {
           <input type="file" onChange={(e) => pickFile(e.target.files?.[0] ?? null)} />
           <span title={file?.name}>{file ? file.name : 'Choose a file'}</span>
         </label>
+
+        <div className="transfer">
+          <div className="slot">
+            <div className={sourceName ? 'box filled' : 'box'}>
+              <span className="box-value">{sourceName ?? '--'}</span>
+            </div>
+            <span className="box-label">From</span>
+          </div>
+          <div className="slot">
+            <div className={targetName ? 'box filled' : 'box'}>
+              <span className="box-value">{targetName ?? '--'}</span>
+            </div>
+            <span className="box-label">To</span>
+          </div>
+        </div>
 
         <button
           className="convert"

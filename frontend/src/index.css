@@ -1,17 +1,30 @@
 :root {
-  --bg: #000;
+  /* --bg is sampled from the background photo, so filled buttons and anything
+     showing through land on the same red instead of a near-miss. White on it measures
+     8.5:1, past AAA. Dark text is not an option here, black against this red is only
+     2.5:1. */
+  --bg: #92231f;
   --text: #fff;
-  --border: #333;
-  --code-bg: #1a1a1a;
+  --border: rgba(255, 255, 255, 0.35);
+  --code-bg: rgba(0, 0, 0, 0.32);
+  /* Translucent rather than a flat dark colour, so hovers darken the photo instead
+     of punching an opaque hole in it. */
+  --shade: rgba(0, 0, 0, 0.28);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 17px/145% var(--sans);
-  /* Dark only. Also makes the native radio controls render dark. */
+  /* Everything downstream is sized in rem, so this one value zooms the whole UI:
+     text, the picker, the sidebar width and the column max-width all scale together. */
+  font: 25px/145% var(--sans);
+  /* Dark only. Also makes the native checkbox render dark. */
   color-scheme: dark;
   color: var(--text);
-  background: var(--bg);
+  /* The image goes on the root, not on body. A background set on body only reaches
+     the canvas when the root has none of its own, and the root needs its red here,
+     so on body the photo would stop at the end of the content and leave flat colour
+     below it. */
+  background: var(--bg) url('./assets/background.jpg') center / cover no-repeat fixed;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,7 +33,6 @@
 
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--text);
 }
 
@@ -66,9 +78,9 @@ button {
 }
 
 button:not(:disabled):hover {
-  background: #1f1f1f;
+  background: var(--shade);
 }
 
-input[type='radio'] {
-  accent-color: #fff;
+input[type='checkbox'] {
+  accent-color: var(--text);
 }
