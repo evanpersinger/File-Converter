@@ -1,8 +1,0 @@
-- main [ref=e3]:
-  - heading "File Converter" [level=1] [ref=e4]
-  - generic [ref=e5] [cursor=pointer]:
-    - button "Choose a file"
-    - generic [ref=e6]: Choose a file
-  - generic [ref=e7]:
-    - heading "Convert to" [level=2] [ref=e8]
-    - button "Convert" [disabled] [ref=e9]
