@@ -12,7 +12,7 @@ the project root:
 
 ```bash
 # Terminal 1: frontend
-cd frontend && npm install && npm run dev
+cd frontend && pnpm install && pnpm dev
 
 # Terminal 2: backend
 uv run uvicorn server:app --app-dir backend --reload --port 8000 --loop asyncio
@@ -191,8 +191,9 @@ python backend/openai_pdf_md.py
 All dependencies are installed automatically when you run `uv sync`
 
 **Important Note:**
-- If you combine multiple JPEG/PNG images into one large image, then convert that to PDF, the conversion to markdown can take a very long time (or fail) because OpenAI's Vision API has to process one massive image instead of multiple smaller pages.
-- **Better approach**: Convert each image to PDF individually, then combine those PDFs using `combine_files.py`, then convert to markdown. This creates a multi-page PDF that processes much faster.
+Combining several images into one large image before converting to PDF makes this script
+very slow and can make it fail. See [CONVERSIONS.md](CONVERSIONS.md) for why, and what to
+do instead.
 
 ### ss_txt.py
 Converts screenshots and images to text using OCR (Optical Character Recognition). Has two modes: plain text (default) and structured content (tables/layout).
@@ -308,9 +309,9 @@ python backend/md_pdf.py file.md [output.pdf]
 **System requirements:**
 - Pandoc (macOS: `brew install pandoc`)
 - LaTeX engine (XeLaTeX recommended) for PDF generation (macOS: `brew install --cask mactex`)
-- mermaid-filter for Mermaid diagram support (requires Node.js/npm):
+- mermaid-filter for Mermaid diagram support (requires Node.js/pnpm):
   ```bash
-  npm install -g mermaid-filter
+  pnpm add -g mermaid-filter
   ```
 
 **Features:**
@@ -764,7 +765,7 @@ they work the same no matter which directory you run from.
    - Pandoc: `brew install pandoc` (for markdown/HTML conversions)
    - LaTeX: `brew install --cask mactex` (for PDF generation)
    - LibreOffice: `brew install --cask libreoffice` (for PowerPoint conversion)
-   - mermaid-filter (for Mermaid diagrams in `md_pdf.py`): `npm install -g mermaid-filter`
+   - mermaid-filter (for Mermaid diagrams in `md_pdf.py`): `pnpm add -g mermaid-filter`
 
 4. **Optional: Set up OpenAI API key** (for `openai_pdf_md.py` and `agent.py`):
    ```bash
@@ -843,7 +844,5 @@ greyed out with the reason instead of being offered and failing.
 
 ## Flows That Don't Work
 
-Conversion chains that run without erroring but produce bad output. These are not recommended. More will be added here as they turn up.
-
-- **JPG → PDF → Markdown**: `jpg_pdf.py` embeds the image at 100 DPI with no text layer, so `pdf_md.py` treats the page as scanned and OCRs it by re-rendering that low-resolution image at 300 DPI. Accuracy is much worse than reading the JPG directly.
-- **Many images → one combined image → PDF → Markdown**: `combine_files.py` stacks images into one very tall image, so the PDF is a single enormous page and `openai_pdf_md.py` has to send it to the Vision API as one image. Very slow, and it can fail outright.
+Some conversion chains run without erroring but produce bad output. They're listed in
+[CONVERSIONS.md](CONVERSIONS.md), along with why each one fails and what to use instead.
