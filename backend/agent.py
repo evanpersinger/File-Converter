@@ -33,6 +33,7 @@ from openai_pdf_md import convert_pdf_to_markdown_openai
 from pdf_md import convert_pdf_to_markdown
 from pdf_png import convert_pdf_to_png
 from png_pdf import convert_png_to_pdf
+from png_svg import convert_png_to_svg
 from pptx_md import convert_pptx_to_markdown
 from pptx_pdf import convert_pptx_to_pdf
 from R_Rmd import convert_r_to_rmd
@@ -150,6 +151,7 @@ agent = Agent(
         function_tool(convert_jpg_to_png),
         function_tool(convert_pdf_to_png),
         function_tool(convert_png_to_pdf),
+        function_tool(convert_png_to_svg),
         function_tool(convert_sql_files),
         function_tool(convert_screenshots_to_text),
 
