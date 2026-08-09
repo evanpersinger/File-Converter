@@ -61,6 +61,7 @@ import jpg_md
 import jpg_ocr
 import jpg_pdf
 import jpg_png
+import jpg_svg
 import md_pdf
 import pdf_md
 import pdf_png
@@ -96,8 +97,8 @@ _LOCK = threading.Lock()
 # the work, and conversions would silently write into site-packages. Fail loudly.
 _CONVERTER_MODULES = [
     csv_md, csv_xlsx, docx_pdf, heic_jpg, heic_md, heic_png, html_pdf, ipynb_pdf,
-    jpg_md, jpg_ocr, jpg_pdf, jpg_png, md_pdf, pdf_md, pdf_png, png_pdf, png_svg,
-    pptx_md, pptx_pdf, R_Rmd, Rmd_pdf, sql_pdf, ss_txt, txt_pdf, xlsx_csv,
+    jpg_md, jpg_ocr, jpg_pdf, jpg_png, jpg_svg, md_pdf, pdf_md, pdf_png, png_pdf,
+    png_svg, pptx_md, pptx_pdf, R_Rmd, Rmd_pdf, sql_pdf, ss_txt, txt_pdf, xlsx_csv,
     combine_files,
 ]
 _stray = [m.__name__ for m in _CONVERTER_MODULES
@@ -346,6 +347,8 @@ REGISTRY: list[Conversion] = [
                via_globals(jpg_pdf, lambda s: jpg_pdf.convert_jpg_to_pdf())),
     Conversion((".jpg", ".jpeg"), "jpg->png", "PNG", ".png",
                via_globals(jpg_png, lambda s: jpg_png.convert_jpg_to_png())),
+    Conversion((".jpg", ".jpeg"), "jpg->svg", "SVG", ".svg",
+               via_globals(jpg_svg, lambda s: jpg_svg.convert_jpg_to_svg())),
     Conversion((".png",), "png->pdf", "PDF", ".pdf",
                via_globals(png_pdf, lambda s: png_pdf.convert_png_to_pdf())),
     Conversion((".png",), "png->svg", "SVG", ".svg",

@@ -28,6 +28,7 @@ from jpg_md import convert_jpg_to_markdown
 from jpg_ocr import convert_jpg_to_ocr
 from jpg_pdf import convert_jpg_to_pdf
 from jpg_png import convert_jpg_to_png
+from jpg_svg import convert_jpg_to_svg
 from md_pdf import convert_md_to_pdf
 from openai_pdf_md import convert_pdf_to_markdown_openai
 from pdf_md import convert_pdf_to_markdown
@@ -149,6 +150,7 @@ agent = Agent(
         function_tool(convert_jpg_to_pdf),
         function_tool(convert_jpg_to_ocr),
         function_tool(convert_jpg_to_png),
+        function_tool(convert_jpg_to_svg),
         function_tool(convert_pdf_to_png),
         function_tool(convert_png_to_pdf),
         function_tool(convert_png_to_svg),

@@ -409,6 +409,33 @@ python backend/png_pdf.py
 3. Saves PDF files to the `output/` folder
 4. Shows summary of successful/failed conversions
 
+### png_svg.py
+Converts PNG images to SVG by tracing them into vector paths. This is real
+vectorization, not the source PNG wrapped in an `<svg>` tag, so the result scales to
+any size without pixelating and can be edited as vector art.
+
+**Usage:**
+```bash
+python backend/png_svg.py
+```
+
+**Python packages:**
+- vtracer>=0.6.15
+
+**How it works:**
+1. Automatically processes ALL PNG files in the `input/` folder
+2. Traces each bitmap into filled SVG paths, in color, fitting spline curves
+3. Saves SVG files to the `output/` folder
+
+Best on flat-color art: logos, icons, line drawings, screenshots of UI. Photographs
+have no flat regions to trace, so they come back as tens of thousands of tiny paths,
+slow to produce and larger than the PNG they came from. The conversion still reports
+success, it just isn't worth running on a photo.
+
+The script calls vtracer with its defaults. If the output looks wrong, the knobs worth
+reaching for are `colormode` (`color` or `binary`), `mode` (`spline` or `polygon`) and
+`filter_speckle`, passed to the `convert_image_to_svg_py` call in the script.
+
 ### jpg_ocr.py
 Converts JPG/JPEG images to plain text (.txt) using OCR. Same OCR as `jpg_md.py`, but
 the output is plain text with no Markdown formatting.
@@ -447,6 +474,34 @@ python backend/jpg_png.py
 
 JPEG carries no transparency, so nothing is lost crossing to PNG. The file will
 usually get larger, since PNG is lossless and JPEG is not.
+
+### jpg_svg.py
+Converts JPG/JPEG images to SVG by tracing them into vector paths. Same tracing as
+`png_svg.py`, but reading a lossy source.
+
+**Usage:**
+```bash
+python backend/jpg_svg.py
+```
+
+**Python packages:**
+- vtracer>=0.6.15
+
+**How it works:**
+1. Automatically processes ALL JPG/JPEG files in the `input/` folder
+2. Traces each bitmap into filled SVG paths, in color, fitting spline curves
+3. Saves SVG files to the `output/` folder
+
+Two things make JPG a worse tracing source than PNG. JPEG is lossy, so every edge
+carries ringing artifacts, and tracing reads that noise as real color regions. The same
+flat-color test image traced from PNG gives 4 paths in 3 colors and a 7.9 KB SVG; saved
+as JPEG at quality 85 first, it gives 71 paths in 65 colors and a 48.3 KB SVG. Trace
+the PNG if you have one. Pass a higher `filter_speckle` to the
+`convert_image_to_svg_py` call if the output is littered with tiny stray shapes. JPEG
+is also the format
+photographs arrive in, and a photo has no flat regions to trace, so it comes back as
+tens of thousands of paths, slower to produce and larger than the source. For a photo,
+use `jpg_pdf.py` or `jpg_png.py` and keep it a raster.
 
 ### heic_png.py
 Converts HEIC images (typically from iPhone/iPad) to PNG.
@@ -963,7 +1018,9 @@ exactly one file; Combine needs two or more.
 | HEIC images | Markdown (.md) | `heic_md.py` |
 | JPG/JPEG images | PDF | `jpg_pdf.py` |
 | JPG/JPEG images | PNG | `jpg_png.py` |
+| JPG/JPEG images | SVG (traced) | `jpg_svg.py` |
 | PNG images | PDF | `png_pdf.py` |
+| PNG images | SVG (traced) | `png_svg.py` |
 | PDF | PNG (one per page) | `pdf_png.py` |
 | JPG/JPEG images | Markdown (.md) | `jpg_md.py` |
 | JPG/JPEG images | Text (.txt) | `jpg_ocr.py` |

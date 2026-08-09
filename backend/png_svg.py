@@ -1,13 +1,10 @@
 """Convert PNG images to SVG by tracing them into vector paths.
 
 For each .png in input/, vtracer traces the bitmap into filled SVG paths and writes a
-.svg to output/. This is real vectorisation, not the source PNG wrapped in an <svg>
-tag, so the result scales to any size without pixelating and can be edited as vector
-art.
-
-Tracing suits flat-colour art: logos, icons, line drawings, screenshots of UI. A
-photograph has no flat regions to trace, so it comes back as tens of thousands of tiny
-paths, slow to produce and larger than the PNG it came from.
+.svg to output/. This is real vectorization, not the source PNG wrapped in an <svg>
+tag, so the result scales without pixelating. Tracing suits flat-color art. A
+photograph has no flat regions and comes back as tens of thousands of paths, slower to
+produce and larger than the PNG it came from. See the README for the tuning knobs.
 """
 
 import os
@@ -58,18 +55,9 @@ def convert_png_to_svg() -> str:
             filename = os.path.splitext(os.path.basename(png_file))[0]
             svg_file = os.path.join(output_folder, f"{filename}.svg")
 
-            # These are vtracer's own defaults, spelled out because they are the
-            # knobs worth reaching for if output looks wrong: 'color' keeps flat
-            # colour regions where 'binary' would throw colour away, 'spline' fits
-            # curves instead of straight-edged polygons, and filter_speckle drops
-            # clusters under 4x4 px so compression noise does not become paths.
-            vtracer.convert_image_to_svg_py(
-                png_file,
-                svg_file,
-                colormode='color',
-                mode='spline',
-                filter_speckle=4,
-            )
+            # vtracer's defaults suit flat-color art. colormode, mode and
+            # filter_speckle are the knobs to reach for otherwise, see the README.
+            vtracer.convert_image_to_svg_py(png_file, svg_file)
             print(f"Converted: {os.path.basename(png_file)} -> {filename}.svg")
             converted.append(f"{filename}.svg")
 
