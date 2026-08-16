@@ -19,7 +19,7 @@ or make the convert handler `async def` without holding the lock, this breaks
 silently and confusingly.
 
 Run it:
-    uv run uvicorn server:app --app-dir backend --reload --port 8000 --loop asyncio
+    uv run uvicorn server:app --app-dir backend --reload --port 8019 --loop asyncio
 
 --loop asyncio is not optional if you want the OpenAI Vision conversion to work:
 vision_parse calls nest_asyncio.apply(), which cannot patch uvloop (the loop

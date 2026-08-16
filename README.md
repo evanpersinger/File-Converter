@@ -15,10 +15,10 @@ the project root:
 cd frontend && pnpm install && pnpm dev
 
 # Terminal 2: backend
-uv run uvicorn server:app --app-dir backend --reload --port 8000 --loop asyncio
+uv run uvicorn server:app --app-dir backend --reload --port 8019 --loop asyncio
 ```
 
-Open **http://localhost:5173**. Both have to be running.
+Open **http://localhost:3004**. Both have to be running.
 
 `--app-dir backend` and `--loop asyncio` are both required, the backend won't start
 without them.

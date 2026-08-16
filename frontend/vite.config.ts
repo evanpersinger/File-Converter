@@ -5,10 +5,12 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
+    port: 3004,
+    strictPort: true,
     // Proxy API calls to the FastAPI backend so the frontend can use relative
     // /api/... URLs. Avoids any CORS configuration on the server side.
     proxy: {
-      '/api': 'http://127.0.0.1:8000',
+      '/api': 'http://127.0.0.1:8019',
     },
   },
 })
