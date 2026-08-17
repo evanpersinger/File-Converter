@@ -298,7 +298,7 @@ export default function App() {
             className="tip"
             data-tip={
               files.length === 0
-                ? 'Add files to convert or combine'
+                ? 'Add files to convert'
                 : files.length > 1
                   ? 'Converting takes one file at a time'
                   : !target
@@ -319,7 +319,7 @@ export default function App() {
             className="tip"
             data-tip={
               files.length === 0
-                ? 'Add files to convert or combine'
+                ? 'Add files to combine'
                 : files.length < 2
                   ? 'Add two or more files to combine'
                   : mixedExtensions

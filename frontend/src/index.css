@@ -1,11 +1,11 @@
 :root {
   /* --bg is sampled from the background photo, so filled buttons and anything
-     showing through land on the same red instead of a near-miss. White on it measures
-     8.5:1, past AAA. Dark text is not an option here, black against this red is only
-     2.5:1. */
+     showing through land on the same red instead of a near-miss. The antique gold on
+     it measures 5.9:1, past AA, and reads as foil stamping against the book cloth.
+     Dark text is not an option here, black against this red is only 2.5:1. */
   --bg: #92231f;
-  --text: #fff;
-  --border: rgba(255, 255, 255, 0.7);
+  --text: #e8c87a;
+  --border: rgba(232, 200, 122, 0.7);
   --code-bg: rgba(0, 0, 0, 0.32);
   /* Translucent rather than a flat dark colour, so hovers darken the photo instead
      of punching an opaque hole in it. */

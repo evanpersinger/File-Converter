@@ -1,11 +1,13 @@
 /* Format list on the left, main column beside it. The whole pair is centred rather
    than pinned to the viewport edge. align-items: stretch is what lets the divider
-   run the full height of the taller column. */
+   run the full height of the taller column, and the 100vh floor keeps it running to
+   the bottom of the screen when the content is shorter than the viewport. */
 .layout {
   display: flex;
   align-items: stretch;
   gap: 2.5rem;
-  max-width: 50rem;
+  min-height: 100vh;
+  max-width: 76rem;
   margin: 0 auto;
   padding: 0 2rem;
 }
@@ -15,13 +17,13 @@
   box-sizing: border-box;
   width: 12rem;
   padding: 2.5rem 1.5rem 2.5rem 0;
-  border-right: 1px solid var(--border);
+  border-right: 8px solid var(--text);
 }
 
 main {
   flex: 1;
   min-width: 0;
-  max-width: 34rem;
+  max-width: 56rem;
   margin: 2.5rem 0;
   text-align: left;
 }
