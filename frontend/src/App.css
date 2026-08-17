@@ -261,6 +261,53 @@ button:disabled {
   cursor: not-allowed;
 }
 
+/* A disabled button receives no pointer events, so neither a title attribute nor a
+   :hover rule on the button itself will ever fire. The reason it's greyed out lives
+   on this wrapper instead, which stays enabled and does get the hover. */
+.tip {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.tip > button:disabled {
+  pointer-events: none;
+}
+
+.tip:has(button:disabled) {
+  cursor: not-allowed;
+}
+
+.actions .tip {
+  flex: 1;
+}
+
+.tip > button {
+  width: 100%;
+}
+
+.tip[data-tip]:hover::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 0.4rem);
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 11rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 0.7rem;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+}
+
 .muted {
   font-size: 0.9rem;
 }

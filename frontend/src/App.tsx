@@ -165,7 +165,7 @@ export default function App() {
             const why = route
               ? undefined
               : files.length === 0
-                ? 'Choose a file first'
+                ? 'Add a file to see what file type it can be converted to'
                 : dep
                   ? dep.hint
                     ? `${dep.reason}. ${dep.hint}`
@@ -173,16 +173,16 @@ export default function App() {
                   : `Cannot convert ${ext || 'this file'} to ${f.name}.`
 
             return (
-              <button
-                key={f.ext}
-                type="button"
-                className={selected?.ext === f.ext ? 'format selected' : 'format'}
-                disabled={!route}
-                title={why}
-                onClick={() => route && setTarget(route.id)}
-              >
-                {f.name}
-              </button>
+              <span key={f.ext} className="tip" data-tip={why}>
+                <button
+                  type="button"
+                  className={selected?.ext === f.ext ? 'format selected' : 'format'}
+                  disabled={!route}
+                  onClick={() => route && setTarget(route.id)}
+                >
+                  {f.name}
+                </button>
+              </span>
             )
           })}
         </div>
@@ -294,29 +294,47 @@ export default function App() {
         </div>
 
         <div className="actions">
-          <button
-            className="action"
-            onClick={() => primary && target && run(() => convert(primary, target), 'converting')}
-            disabled={files.length !== 1 || !target || busy}
-            title={files.length > 1 ? 'Converting takes one file at a time' : undefined}
-          >
-            {status.kind === 'converting' ? 'Converting...' : 'Convert'}
-          </button>
-
-          <button
-            className="action"
-            onClick={() => run(() => combine(files), 'combining')}
-            disabled={!canCombine || busy}
-            title={
-              files.length < 2
-                ? 'Add two or more files to combine'
-                : mixedExtensions
-                  ? 'Every file has to be the same format'
-                  : undefined
+          <span
+            className="tip"
+            data-tip={
+              files.length === 0
+                ? 'Add files to convert or combine'
+                : files.length > 1
+                  ? 'Converting takes one file at a time'
+                  : !target
+                    ? 'Pick a format to convert to'
+                    : undefined
             }
           >
-            {status.kind === 'combining' ? 'Combining...' : 'Combine files'}
-          </button>
+            <button
+              className="action"
+              onClick={() => primary && target && run(() => convert(primary, target), 'converting')}
+              disabled={files.length !== 1 || !target || busy}
+            >
+              {status.kind === 'converting' ? 'Converting...' : 'Convert Files'}
+            </button>
+          </span>
+
+          <span
+            className="tip"
+            data-tip={
+              files.length === 0
+                ? 'Add files to convert or combine'
+                : files.length < 2
+                  ? 'Add two or more files to combine'
+                  : mixedExtensions
+                    ? 'Every file has to be the same format'
+                    : undefined
+            }
+          >
+            <button
+              className="action"
+              onClick={() => run(() => combine(files), 'combining')}
+              disabled={!canCombine || busy}
+            >
+              {status.kind === 'combining' ? 'Combining...' : 'Combine Files'}
+            </button>
+          </span>
         </div>
 
         {result && (
