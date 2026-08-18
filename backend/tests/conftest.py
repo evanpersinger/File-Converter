@@ -53,3 +53,25 @@ def write_image() -> Callable[..., Path]:
         return path
 
     return write
+
+
+@pytest.fixture
+def sandbox_setup_dirs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Callable[[ModuleType], tuple[Path, Path]]:
+    """The same redirect for modules that get their folders from a `setup_directories()`
+    call instead of module globals (combine_files, txt_pdf, sql_pdf).
+
+    server.py needs two mechanisms for the same reason, see `via_setup_dirs`. Both
+    directories are created here, since that is what the real setup_directories does.
+    """
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    input_dir.mkdir()
+    output_dir.mkdir()
+
+    def redirect(module: ModuleType) -> tuple[Path, Path]:
+        monkeypatch.setattr(module, "setup_directories", lambda: (input_dir, output_dir))
+        return input_dir, output_dir
+
+    return redirect
