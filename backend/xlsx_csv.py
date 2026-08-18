@@ -48,8 +48,12 @@ def convert_xlsx_to_csv() -> str:
             csv_filename = os.path.splitext(filename)[0] + '.csv'
             csv_path = os.path.join(output_folder, csv_filename)
 
-            # Read excel file and convert to CSV
-            df = pd.read_excel(file)
+            # dtype=str keeps the cell types the workbook already declares. Without it
+            # pandas re-guesses them, and a cell explicitly stored as text comes back
+            # as something else: '007' as the number 7, 'TRUE' as the word True. There
+            # is nothing to lose by reading as text here, since the output is a CSV and
+            # a CSV carries no types either way.
+            df = pd.read_excel(file, dtype=str)
             df.to_csv(csv_path, index=False)
             print(f"Converted {filename} to {csv_filename}")
             converted.append(csv_filename)

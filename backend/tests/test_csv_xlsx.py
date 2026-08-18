@@ -13,6 +13,7 @@ from types import ModuleType
 
 import pandas as pd
 import pytest
+from openpyxl import load_workbook
 
 import csv_xlsx
 import xlsx_csv
@@ -138,7 +139,29 @@ def test_a_cell_starting_with_equals_is_not_turned_into_a_formula(
     assert round_trip(sandbox, "f\n=1+1\n") == "f\n=1+1\n"
 
 
-def test_trailing_zeros_on_a_float_are_dropped(sandbox: Sandbox) -> None:
-    """Documented rather than argued with: 1.10 is the number 1.1, and column-wide
-    numeric formatting is not something a CSV can carry anyway."""
-    assert round_trip(sandbox, "n\n1.10\n") == "n\n1.1\n"
+def test_trailing_zeros_on_a_float_survive_the_round_trip(sandbox: Sandbox) -> None:
+    """1.10 and 1.1 are the same number but not the same text, so the column is kept as
+    text rather than converted. A price list written to two decimal places stays that
+    way instead of being reformatted on the user's behalf."""
+    assert round_trip(sandbox, "n\n1.10\n") == "n\n1.10\n"
+
+
+def test_a_plain_numeric_column_is_still_written_as_numbers(sandbox: Sandbox) -> None:
+    """The point of detecting per column rather than reading everything as text: a
+    column that loses nothing by being numeric stays numeric, so Excel can still add
+    it up."""
+    input_dir, output_dir = sandbox(csv_xlsx)
+    (input_dir / "data.csv").write_text("price,code\n15,007\n20,042\n", encoding="utf-8")
+
+    csv_xlsx.convert_csv_to_xlsx()
+
+    # Read the cells rather than a DataFrame: what matters is the type stored in the
+    # workbook, and pandas would re-guess it on the way back in.
+    sheet = load_workbook(output_dir / "data.xlsx").active
+    price = [sheet.cell(row=r, column=1) for r in (2, 3)]
+    code = [sheet.cell(row=r, column=2) for r in (2, 3)]
+
+    assert [c.data_type for c in price] == ["n", "n"]
+    assert [c.value for c in price] == [15, 20]
+    assert [c.data_type for c in code] == ["s", "s"]
+    assert [c.value for c in code] == ["007", "042"]
