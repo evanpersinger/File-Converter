@@ -3,6 +3,9 @@
 For each image in input/, preprocesses it (grayscale, contrast, sharpen, denoise),
 runs Tesseract OCR, cleans up the text (rejoining split sentences), and writes it
 to output/.
+
+English only: Tesseract is called with lang='eng', so text in another language comes
+back as whatever English words its shapes resemble rather than as an error.
 """
 
 import os

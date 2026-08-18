@@ -12,6 +12,10 @@ Math notation is normalized afterwards:
     - Loose notation in plain text (LaTeX commands like \alpha, ASCII operators
       like <=, super/subscripts like x^2) is converted to unicode.
 Code spans/blocks are protected so identifiers aren't touched.
+
+English only for the OCR path: TESSERACT_LANG is 'eng', so a scanned page in another
+language comes back as whatever English words its shapes resemble rather than as an
+error. Searchable pages are unaffected, their text is read directly.
 """
 
 import os

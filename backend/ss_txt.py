@@ -8,6 +8,11 @@ Two modes:
     OCR, heavy OCR-error correction, and `| table |` formatting for images
     with tables or other structured layout.
 
+English only: Tesseract is called with lang='eng', so text in another language comes
+back as whatever English words its shapes resemble rather than as an error. The
+error corrections in fix_common_ocr_errors assume English too, and the ones that
+would rewrite ordinary words are limited to detected table cells.
+
 Usage:
     python ss_txt.py               # plain text
     python ss_txt.py --structured  # tables / structured content
@@ -316,8 +321,14 @@ def are_texts_similar(text1, text2, threshold=0.7):
     return similarity >= threshold
 
 
-def fix_common_ocr_errors(text):
-    """Fix common OCR misreadings (bubbles, l/1/I confusion, etc.)."""
+def fix_common_ocr_errors(text, table_cells=False):
+    """Fix common OCR misreadings (bubbles, l/1/I confusion, etc.).
+
+    Args:
+        table_cells: True only when `text` came out of a detected table cell. Some
+            corrections are safe there and destructive anywhere else, so they are off
+            by default and a caller has to opt in.
+    """
     if not text:
         return text
 
@@ -337,23 +348,28 @@ def fix_common_ocr_errors(text):
         text = re.sub(rf'\s{bad}\s', f' {good} ', text)
 
     # Table header patterns
-    text = re.sub(r'\bIa\s+b\s+Ic\b', 'a b c', text)
-    text = re.sub(r'\bla\s+b\s+lc\b', 'a b c', text)
-    text = re.sub(r'^Ia\s+b\s+Ic\s*$', 'a b c', text, flags=re.MULTILINE)
-    text = re.sub(r'^la\s+b\s+lc\s*$', 'a b c', text, flags=re.MULTILINE)
+    if table_cells:
+        text = re.sub(r'\bIa\s+b\s+Ic\b', 'a b c', text)
+        text = re.sub(r'\bla\s+b\s+lc\b', 'a b c', text)
+        text = re.sub(r'^Ia\s+b\s+Ic\s*$', 'a b c', text, flags=re.MULTILINE)
+        text = re.sub(r'^la\s+b\s+lc\s*$', 'a b c', text, flags=re.MULTILINE)
 
     # Empty circle artifacts
     text = re.sub(r'\bOo\b', '', text)
     text = re.sub(r'^Oo\s*$', '', text, flags=re.MULTILINE)
     text = re.sub(r'\bOs(\d+)\b', r'\1', text)  # "Os6" -> "6"
 
-    # letter + "1" misread as letter + "i"/"l"/"t"
-    text = re.sub(r'\b([a-z])i\b', r'\g<1>1', text)  # "bi" -> "b1"
-    text = re.sub(r'\b([a-z])l\b', r'\g<1>1', text)  # "al" -> "a1"
-    text = re.sub(r'\blon\b', 'c1', text)            # "lon" -> "c1"
-    text = re.sub(r'\b1t\b', 'a1', text)             # "1t" -> "a1"
-    text = re.sub(r'\bat\b', 'a1', text)             # "at" -> "a1" (2-char table cells)
-    text = re.sub(r'\b([a-z])t\b', r'\g<1>1', text)  # "bt" -> "b1"
+    # letter + "1" misread as letter + "i"/"l"/"t". Cell text only: a two-character
+    # cell holds a label like a1 or b1 and the trailing character is a misread 1, but
+    # the same patterns match ordinary short words, so running them over a paragraph
+    # turns "at" into "a1", "it" into "i1" and "hi" into "h1".
+    if table_cells:
+        text = re.sub(r'\b([a-z])i\b', r'\g<1>1', text)  # "bi" -> "b1"
+        text = re.sub(r'\b([a-z])l\b', r'\g<1>1', text)  # "al" -> "a1"
+        text = re.sub(r'\blon\b', 'c1', text)            # "lon" -> "c1"
+        text = re.sub(r'\b1t\b', 'a1', text)             # "1t" -> "a1"
+        text = re.sub(r'\bat\b', 'a1', text)             # "at" -> "a1"
+        text = re.sub(r'\b([a-z])t\b', r'\g<1>1', text)  # "bt" -> "b1"
 
     # Number misreadings (l0 -> 0, O1 -> 1, I0 -> 10, ...)
     corrections = {
@@ -470,12 +486,14 @@ def extract_table_cells(image, table_cells):
                     config = f'--oem 3 --psm {psm}'
                     text = pytesseract.image_to_string(cell_pil, config=config, lang='eng').strip()
                     if text:
-                        cell_texts_tried.append(fix_common_ocr_errors(text))
+                        cell_texts_tried.append(fix_common_ocr_errors(text, table_cells=True))
                 except Exception:
                     continue
 
             if cell_texts_tried:
-                text = fix_common_ocr_errors(max(cell_texts_tried, key=len).strip())
+                text = fix_common_ocr_errors(
+                    max(cell_texts_tried, key=len).strip(), table_cells=True
+                )
                 if text:
                     row_texts.append(text)
 
@@ -594,7 +612,7 @@ def clean_structured_text(text, is_table=False):
     if not text:
         return ""
 
-    text = fix_common_ocr_errors(text)
+    text = fix_common_ocr_errors(text, table_cells=is_table)
     text = re.sub(r'\n{3,}', '\n\n', text)
     lines = [line.rstrip() for line in text.split('\n')]
 
