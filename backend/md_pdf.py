@@ -218,21 +218,36 @@ def _is_ascii_diagram_line(ln):
     return False
 
 
+# A markdown table separator row. At least one dash is required, otherwise a diagram
+# column line like "|    |    |" matches this too and real diagrams stop being wrapped.
+_TABLE_SEPARATOR = re.compile(r"^\s*\|[\s:|-]*-[\s:|-]*\|\s*$")
+
+
 def wrap_ascii_diagrams(md):
     """Wrap contiguous ASCII-diagram blocks in code fences to preserve spacing."""
     lines = md.split("\n")
     wrapped_lines = []
     idx = 0
     in_fence = False
+    in_table = False
     while idx < len(lines):
         line = lines[idx]
+        # A separator row opens a table, a blank line closes it. A table row whose cells
+        # are all numbers is indistinguishable from a diagram column line once the pipes,
+        # spaces and digits are stripped, so the table has to be tracked across lines
+        # rather than recognized from any one line on its own. Without this the data rows
+        # of a numeric table get fenced off from their own header.
+        if _TABLE_SEPARATOR.match(line):
+            in_table = True
+        elif not line.strip():
+            in_table = False
         # Track existing code fences so we don't double-wrap them
         if line.strip().startswith("```"):
             in_fence = not in_fence
             wrapped_lines.append(line)
             idx += 1
             continue
-        if not in_fence and _is_ascii_diagram_line(line):
+        if not in_fence and not in_table and _is_ascii_diagram_line(line):
             # Collect the contiguous diagram block, allowing single blank lines
             # between diagram lines (so the whole graph stays together)
             block_start = idx
