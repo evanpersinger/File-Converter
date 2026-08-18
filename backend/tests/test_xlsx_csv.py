@@ -10,6 +10,7 @@ from pathlib import Path
 from types import ModuleType
 
 import pandas as pd
+import pytest
 
 import xlsx_csv
 
@@ -120,3 +121,63 @@ def test_unicode_survives(sandbox: Sandbox) -> None:
     text = (output_dir / "data.csv").read_text(encoding="utf-8")
     assert "café" in text
     assert "日本語" in text
+
+
+def test_each_sheet_gets_its_own_named_file(sandbox: Sandbox) -> None:
+    input_dir, output_dir = sandbox(xlsx_csv)
+    path = input_dir / "book.xlsx"
+    with pd.ExcelWriter(path) as writer:
+        pd.DataFrame({"a": [1]}).to_excel(writer, sheet_name="First", index=False)
+        pd.DataFrame({"b": [2]}).to_excel(writer, sheet_name="Second", index=False)
+
+    summary = xlsx_csv.convert_xlsx_to_csv()
+
+    assert sorted(p.name for p in output_dir.iterdir()) == [
+        "book_First.csv",
+        "book_Second.csv",
+    ]
+    assert (output_dir / "book_First.csv").read_text(encoding="utf-8") == "a\n1\n"
+    assert (output_dir / "book_Second.csv").read_text(encoding="utf-8") == "b\n2\n"
+    assert "Converted 2 file(s)" in summary
+
+
+def test_a_single_sheet_workbook_keeps_the_plain_name(sandbox: Sandbox) -> None:
+    """Naming every output after its sheet would rename the common case to serve the
+    rare one, so a one-sheet workbook still produces book.csv."""
+    input_dir, output_dir = sandbox(xlsx_csv)
+    pd.DataFrame({"a": [1]}).to_excel(input_dir / "book.xlsx", sheet_name="Only", index=False)
+
+    xlsx_csv.convert_xlsx_to_csv()
+
+    assert [p.name for p in output_dir.iterdir()] == ["book.csv"]
+
+
+@pytest.mark.parametrize(
+    ("sheet_name", "expected"),
+    [
+        ("Q1 Sales", "Q1 Sales"),
+        ("2024/2025", "2024_2025"),
+        (r"a\b", "a_b"),
+        ("what?", "what_"),
+        ("...", "sheet"),
+    ],
+)
+def test_sheet_names_are_made_safe_for_a_filename(sheet_name: str, expected: str) -> None:
+    """Excel allows characters in a tab name that would break the path or, with a
+    slash, write the CSV somewhere other than the output folder entirely."""
+    assert xlsx_csv._safe_name(sheet_name) == expected
+
+
+def test_a_sheet_named_with_a_separator_stays_inside_the_output_folder(
+    sandbox: Sandbox,
+) -> None:
+    input_dir, output_dir = sandbox(xlsx_csv)
+    path = input_dir / "book.xlsx"
+    with pd.ExcelWriter(path) as writer:
+        pd.DataFrame({"a": [1]}).to_excel(writer, sheet_name="Q1", index=False)
+        pd.DataFrame({"b": [2]}).to_excel(writer, sheet_name="24-25", index=False)
+
+    xlsx_csv.convert_xlsx_to_csv()
+
+    assert all(p.parent == output_dir for p in output_dir.iterdir())
+    assert len(list(output_dir.iterdir())) == 2
