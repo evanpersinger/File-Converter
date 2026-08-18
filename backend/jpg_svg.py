@@ -61,7 +61,14 @@ def convert_jpg_to_svg() -> str:
             print(f"Converted: {os.path.basename(jpg_file)} -> {filename}.svg")
             converted.append(f"{filename}.svg")
 
-        except Exception as e:
+        # vtracer is a Rust extension, and on an unreadable file it panics rather than
+        # raising. pyo3 surfaces that as PanicException, which derives straight from
+        # BaseException, so a plain `except Exception` never sees it and one bad file
+        # takes the whole batch down. The class is not importable to name directly, so
+        # the interrupt cases are re-raised first and the rest is caught wide.
+        except (KeyboardInterrupt, SystemExit):
+            raise
+        except BaseException as e:
             print(f"Error converting {jpg_file}: {str(e)}")
             errors.append(f"{os.path.basename(jpg_file)}: {e}")
 
