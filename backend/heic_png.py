@@ -32,9 +32,10 @@ def convert_heic_to_png() -> str:
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # A set, not a concatenated list: macOS filesystems are case-insensitive by
-    # default, so '*.heic' and '*.HEIC' return the same file and a list would
-    # convert it twice.
+    # Both cases are globbed because glob matches with fnmatch, which is case-sensitive
+    # on macOS and Linux whatever the filesystem does, so '*.heic' alone would miss
+    # IMG_1.HEIC, which is how the camera names them. A set rather than a concatenated
+    # list so that a file matching two patterns is still converted once.
     heic_files = sorted({
         path
         for pattern in ('*.heic', '*.HEIC')

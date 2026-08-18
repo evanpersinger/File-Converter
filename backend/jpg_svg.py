@@ -30,9 +30,10 @@ def convert_jpg_to_svg() -> str:
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # A set, not a concatenated list: macOS filesystems are case-insensitive by
-    # default, so '*.jpg' and '*.JPG' return the same file and a list would convert
-    # it twice.
+    # Both cases are globbed because glob matches with fnmatch, which is case-sensitive
+    # on macOS and Linux whatever the filesystem does, so '*.jpg' alone would miss
+    # photo.JPG. A set rather than a concatenated list so that a file matching two
+    # patterns is still converted once.
     jpg_files = sorted({
         path
         for pattern in ('*.jpg', '*.jpeg', '*.JPG', '*.JPEG')
@@ -61,11 +62,10 @@ def convert_jpg_to_svg() -> str:
             print(f"Converted: {os.path.basename(jpg_file)} -> {filename}.svg")
             converted.append(f"{filename}.svg")
 
-        # vtracer is a Rust extension, and on an unreadable file it panics rather than
-        # raising. pyo3 surfaces that as PanicException, which derives straight from
-        # BaseException, so a plain `except Exception` never sees it and one bad file
-        # takes the whole batch down. The class is not importable to name directly, so
-        # the interrupt cases are re-raised first and the rest is caught wide.
+        # vtracer is a Rust extension: on an unreadable file it panics, and pyo3's
+        # PanicException derives from BaseException, so `except Exception` never sees it
+        # and one bad file takes down the whole batch. The class is not importable to
+        # name directly, hence the wide catch with the interrupts re-raised first.
         except (KeyboardInterrupt, SystemExit):
             raise
         except BaseException as e:

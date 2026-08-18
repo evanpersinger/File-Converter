@@ -12,7 +12,6 @@ from pathlib import Path
 from types import ModuleType
 
 import pandas as pd
-import pytest
 from openpyxl import load_workbook
 
 import csv_xlsx

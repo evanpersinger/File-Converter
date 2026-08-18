@@ -84,9 +84,7 @@ def convert_csv_to_xlsx() -> str:
 
             # Read as text so pandas' own guessing can't damage anything, then put back
             # only the types that survive being printed out again.
-            df = pd.read_csv(file, dtype=str)
-            if not df.empty:
-                df = df.apply(_infer_lossless)
+            df = pd.read_csv(file, dtype=str).apply(_infer_lossless)
 
             # xlsxwriter rather than the default openpyxl. openpyxl stores any string
             # starting with '=' as a live formula, which both loses the original text

@@ -27,9 +27,10 @@ def convert_jpg_to_png() -> str:
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    # A set, not a concatenated list: macOS filesystems are case-insensitive by
-    # default, so '*.jpg' and '*.JPG' return the same file and a list would convert
-    # it twice.
+    # Both cases are globbed because glob matches with fnmatch, which is case-sensitive
+    # on macOS and Linux whatever the filesystem does, so '*.jpg' alone would miss
+    # photo.JPG. A set rather than a concatenated list so that a file matching two
+    # patterns is still converted once.
     jpg_files = sorted({
         path
         for pattern in ('*.jpg', '*.jpeg', '*.JPG', '*.JPEG')
