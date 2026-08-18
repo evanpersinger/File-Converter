@@ -305,7 +305,7 @@ REGISTRY: list[Conversion] = [
                via_globals(csv_xlsx, lambda s: csv_xlsx.convert_csv_to_xlsx())),
     Conversion((".xlsx",), "xlsx->csv", "CSV", ".csv",
                via_globals(xlsx_csv, lambda s: xlsx_csv.convert_xlsx_to_csv()),
-               note="Multi-sheet workbooks convert the first sheet only."),
+               note="One CSV per sheet. Multi-sheet workbooks come back as a zip."),
 
     # --- PDF -----------------------------------------------------------------
     Conversion((".pdf",), "pdf->md", "Markdown", ".md",
