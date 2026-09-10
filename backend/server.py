@@ -1,30 +1,11 @@
-"""server.py
+"""FastAPI backend for the web UI. Upload a file, pick a format, get the converted file back.
 
-Local web UI backend for the file converters. Upload one file, pick a target
-format, get the converted file back.
+Each request runs in a scratch dir under .webui_jobs/ with the converter modules
+redirected there (see the `via_*` helpers). That redirection mutates module globals,
+so keep one uvicorn worker and the _LOCK.
 
-The tricky part is isolation. The batch converters process *everything* in their
-input folder, so if the real backend/input/ has leftover files, a web request that
-uploaded one file would convert all of them. Instead of touching the real folders,
-each request gets a scratch workspace under .webui_jobs/<uuid>/ and the converter
-modules are temporarily pointed at it.
-
-Every converter resolves its input/output directories in one of six ways, so there
-are six ways to redirect it. See the `via_*` helpers below.
-
-CONCURRENCY: redirection works by mutating module-level state, which is
-process-global. Two conversions running at once would corrupt each other's paths.
-_LOCK plus a single uvicorn worker is what makes this safe. If you ever add workers
-or make the convert handler `async def` without holding the lock, this breaks
-silently and confusingly.
-
-Run it:
-    uv run uvicorn server:app --app-dir backend --reload --port 8019 --loop asyncio
-
---loop asyncio is not optional if you want the OpenAI Vision conversion to work:
-vision_parse calls nest_asyncio.apply(), which cannot patch uvloop (the loop
-uvicorn[standard] picks by default). Every other conversion, including the Claude
-one, works either way.
+Run: uv run uvicorn server:app --app-dir backend --reload --port 8019 --loop asyncio
+(--loop asyncio is required for the OpenAI PDF conversion, everything else works either way.)
 """
 
 from __future__ import annotations
@@ -90,9 +71,7 @@ load_dotenv(REPO / ".env")
 _LOCK = threading.Lock()
 
 
-# ---------------------------------------------------------------------------
 # Import sanity check
-# ---------------------------------------------------------------------------
 # This project is also installed as a wheel (with backend/ flattened to top level),
 # so `import csv_md` can resolve to site-packages instead of backend/. If that
 # happened, we would be patching a different copy of the module than the one doing
@@ -113,9 +92,7 @@ if _stray:
     )
 
 
-# ---------------------------------------------------------------------------
 # Isolation primitives
-# ---------------------------------------------------------------------------
 @contextmanager
 def job_workspace() -> Iterator[tuple[Path, Path, Path]]:
     """Yield a fresh (job_dir, input_dir, output_dir), deleted on exit no matter what.
@@ -210,9 +187,7 @@ def via_params(call: Callable):
     return invoke
 
 
-# ---------------------------------------------------------------------------
 # System dependency probes
-# ---------------------------------------------------------------------------
 _LIBREOFFICE_APP = Path("/Applications/LibreOffice.app/Contents/MacOS/soffice")
 
 DEPS: dict[str, Callable[[], bool]] = {
@@ -240,9 +215,7 @@ def missing_deps(requires: tuple[str, ...]) -> list[str]:
     return [dep for dep in requires if not DEPS[dep]()]
 
 
-# ---------------------------------------------------------------------------
 # Extension verification
-# ---------------------------------------------------------------------------
 # Only formats libmagic identifies with certainty belong here. The text formats
 # (.md, .txt, .sql, .R, .Rmd) all sniff as text/plain and cannot be told apart, and
 # .ipynb is indistinguishable from any other JSON. Their absence is the point: no
@@ -283,9 +256,7 @@ def sniff_mismatch(path: Path) -> dict | None:
     return {"named": path.suffix.lower(), "actual": real_ext}
 
 
-# ---------------------------------------------------------------------------
 # Conversion registry
-# ---------------------------------------------------------------------------
 @dataclass(frozen=True)
 class Conversion:
     source_exts: tuple[str, ...]
@@ -419,9 +390,7 @@ ALL_FORMATS = [
 ]
 
 
-# ---------------------------------------------------------------------------
 # App
-# ---------------------------------------------------------------------------
 app = FastAPI(title="File Converter")
 
 

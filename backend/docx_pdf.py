@@ -68,31 +68,6 @@ def add_table_to_story(story, table):
     story.append(Spacer(1, 12))
 
 
-# Convert a paragraph with formatting (bold, italic) to HTML-like text for ReportLab
-def para_to_html(para):
-    """Convert a docx paragraph with runs to HTML-like text for ReportLab"""
-    html_parts = []
-    for run in para.runs:
-        text = run.text
-        if not text:
-            continue
-        
-        # Escape special characters
-        text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-        
-        # Apply formatting
-        if run.bold:
-            text = f'<b>{text}</b>'
-        if run.italic:
-            text = f'<i>{text}</i>'
-        if run.underline:
-            text = f'<u>{text}</u>'
-        
-        html_parts.append(text)
-    
-    return ''.join(html_parts)
-
-
 # Convert a .docx file to PDF
 # returns True if successful, False otherwise
 def convert_docx_to_pdf(docx_path: str, output_path: str | None = None, input_dir: str | None = None, output_dir: str | None = None) -> bool:

@@ -1,23 +1,6 @@
-"""Convert Markdown files to PDF using pandoc (xelatex engine).
+"""Convert Markdown in input/ (or one file passed as an argument) to PDF in output/ via pandoc + xelatex.
 
-For each .md in input/ (or a file passed as an argument), the markdown is
-preprocessed and then rendered to a PDF in output/.
-
-Preprocessing (mirrors the inverse of pdf_md.py):
-    - Normalize math delimiters: \\[ .. \\] -> $$ .. $$, \\( .. \\) -> $ .. $,
-      and fix escaped/space-padded $ so pandoc's tex_math_dollars sees clean math.
-    - Convert unicode math back to LaTeX so xelatex renders it: greek letters,
-      operators/relations/arrows/set-theory, unicode super/subscripts (x², xᵢ),
-      and bar variables (x̄ -> \\bar{x}). Code spans/blocks are protected first.
-    - Tables: normalize pipe spacing, protect against mid-table page breaks,
-      turn spanning header rows into centered captions, mbox negative numbers.
-    - Wrap ASCII-art / graph diagrams in code fences so their spacing survives.
-Mermaid diagram blocks are rendered via mermaid-filter when it's installed.
-
-Robustness: the full-fidelity render is attempted first. If xelatex chokes on
-the input (e.g. an undefined LaTeX command like a mistyped \\gama), we fall back
-to a safe render with math/raw-LaTeX disabled so you still get a PDF, and report
-the command that likely broke it.
+Falls back to a math-disabled render if xelatex chokes, so you still get a PDF.
 """
 
 import os

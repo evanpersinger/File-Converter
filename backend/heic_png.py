@@ -1,9 +1,4 @@
-"""Convert HEIC images to PNG.
-
-Registers the HEIF opener with Pillow, then for each .heic in input/ opens it and
-saves a .png to output/. Unlike the JPG route this keeps an alpha channel if the
-source has one, since PNG supports transparency.
-"""
+"""Convert HEIC images in input/ to PNG in output/. Keeps the alpha channel, unlike the JPG route."""
 
 import os
 import glob

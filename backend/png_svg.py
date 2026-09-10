@@ -1,10 +1,6 @@
-"""Convert PNG images to SVG by tracing them into vector paths.
+"""Trace PNG images in input/ into vector SVG paths in output/ with vtracer.
 
-For each .png in input/, vtracer traces the bitmap into filled SVG paths and writes a
-.svg to output/. This is real vectorization, not the source PNG wrapped in an <svg>
-tag, so the result scales without pixelating. Tracing suits flat-color art. A
-photograph has no flat regions and comes back as tens of thousands of paths, slower to
-produce and larger than the PNG it came from. See the README for the tuning knobs.
+Suits flat-color art. Photos come back as huge, slow SVGs. Tuning knobs are in the README.
 """
 
 import os

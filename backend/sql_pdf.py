@@ -5,14 +5,11 @@ statements out as a formatted PDF with reportlab. Writes to output/.
 """
 
 
-import os
-import sys
 import argparse
 from pathlib import Path
-from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.lib.pagesizes import A4
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.units import inch
 from reportlab.lib import colors
 
 
@@ -30,45 +27,6 @@ def setup_directories():
     output_dir.mkdir(exist_ok=True)
 
     return input_dir, output_dir
-
-
-def format_sql_with_syntax_highlighting(sql_content):
-    """
-    Format SQL content with basic syntax highlighting using reportlab.
-    This is a simplified version - for full syntax highlighting, 
-    consider using pygments or similar libraries.
-    """
-    # Basic SQL keywords to highlight
-    sql_keywords = [
-        'SELECT', 'FROM', 'WHERE', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP',
-        'ALTER', 'TABLE', 'INDEX', 'VIEW', 'PROCEDURE', 'FUNCTION', 'TRIGGER',
-        'JOIN', 'LEFT', 'RIGHT', 'INNER', 'OUTER', 'ON', 'GROUP', 'BY', 'ORDER',
-        'HAVING', 'UNION', 'DISTINCT', 'AS', 'AND', 'OR', 'NOT', 'IN', 'EXISTS',
-        'BETWEEN', 'LIKE', 'IS', 'NULL', 'TRUE', 'FALSE', 'CASE', 'WHEN', 'THEN',
-        'ELSE', 'END', 'IF', 'WHILE', 'FOR', 'LOOP', 'BEGIN', 'COMMIT', 'ROLLBACK',
-        'TRANSACTION', 'GRANT', 'REVOKE', 'PRIMARY', 'KEY', 'FOREIGN', 'REFERENCES',
-        'UNIQUE', 'CHECK', 'DEFAULT', 'NOT', 'NULL', 'AUTO_INCREMENT', 'IDENTITY'
-    ]
-    
-    lines = sql_content.split('\n')
-    formatted_lines = []
-    
-    for line in lines:
-        if not line.strip():
-            formatted_lines.append("")
-            continue
-            
-        # Simple keyword highlighting (case-insensitive)
-        formatted_line = line
-        for keyword in sql_keywords:
-            # Use regex-like replacement for whole words
-            import re
-            pattern = r'\b' + re.escape(keyword) + r'\b'
-            formatted_line = re.sub(pattern, f'<b>{keyword}</b>', formatted_line, flags=re.IGNORECASE)
-        
-        formatted_lines.append(formatted_line)
-    
-    return '\n'.join(formatted_lines)
 
 
 def create_pdf_from_sql(sql_file_path, output_path):

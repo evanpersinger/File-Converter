@@ -1,10 +1,6 @@
-"""Convert JPG/JPEG images to SVG by tracing them into vector paths.
+"""Trace JPG images in input/ into vector SVG paths in output/ with vtracer.
 
-For each .jpg/.jpeg in input/, vtracer traces the bitmap into filled SVG paths and
-writes a .svg to output/. JPEG makes a poor tracing source twice over: it is lossy, so
-edge ringing artifacts trace as real color regions, and it is the format photographs
-arrive in. Trace a PNG instead where there is one, and see the README for the numbers
-and the tuning knobs.
+JPEG artifacts trace as real shapes, so prefer a PNG source when you have one.
 """
 
 import os

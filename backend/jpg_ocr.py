@@ -1,10 +1,6 @@
-"""Convert JPG/JPEG images to plain text via OCR.
+"""Convert JPG images in input/ to plain text in output/ via Tesseract OCR.
 
-For each image in input/, converts it to RGB, runs Tesseract OCR (through a
-temporary PNG), and writes the extracted text to output/.
-
-English only: Tesseract is called with lang='eng', so text in another language comes
-back as whatever English words its shapes resemble rather than as an error.
+English only (lang='eng'): other languages come back as garbled English, not an error.
 """
 
 import os

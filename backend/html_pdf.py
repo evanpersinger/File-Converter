@@ -1,8 +1,6 @@
-"""Convert HTML files to PDF.
+"""Convert HTML files in input/ (or one passed as an argument) to PDF in output/.
 
-For each .html/.htm in input/ (or a file passed as an argument), renders it to PDF
-with wkhtmltopdf, falling back to pandoc (xelatex) if wkhtmltopdf is missing.
-Writes to output/.
+Uses wkhtmltopdf, falling back to pandoc (xelatex) if it is not installed.
 """
 
 

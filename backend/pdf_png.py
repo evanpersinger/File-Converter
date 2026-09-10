@@ -1,9 +1,4 @@
-"""Convert PDF pages to PNG images.
-
-For each .pdf in input/, renders every page with PyMuPDF and writes one PNG per page
-to output/. A single-page PDF produces name.png; a multi-page one produces
-name_page1.png, name_page2.png, and so on.
-"""
+"""Render each page of the PDFs in input/ to a PNG in output/ (name.png, or name_pageN.png for multi-page)."""
 
 import os
 import glob

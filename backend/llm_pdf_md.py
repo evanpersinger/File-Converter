@@ -1,15 +1,6 @@
-"""Convert PDF files to Markdown with an LLM, via OpenAI or Anthropic.
+"""Convert PDFs in input/ to Markdown in output/ using an LLM. Slower than pdf_md.py, costs money.
 
-Both converters read every .pdf in input/ and write a matching .md to output/. They
-handle complex layouts better than the local pdf_md.py converter, but they are slower
-and they bill whichever API key they use.
-
-- convert_pdf_to_markdown_openai: rasterizes each page through the vision-parse
-  library and sends it to an OpenAI vision model. Needs OPENAI_API_KEY.
-- convert_pdf_to_markdown_anthropic: sends the PDF itself to Claude, which reads PDFs
-  natively (32 MB / 600 pages per request). Needs ANTHROPIC_API_KEY.
-
-Keys come from the environment or a .env file at the project root.
+OpenAI path needs OPENAI_API_KEY, Claude path needs ANTHROPIC_API_KEY (env or .env).
 """
 
 import base64
@@ -40,9 +31,7 @@ _MARKDOWN_PROMPT = (
 )
 
 
-# ---------------------------------------------------------------------------
 # OpenAI (via vision-parse)
-# ---------------------------------------------------------------------------
 def convert_with_retry(parser, pdf_path, max_retries=3, retry_delay=5):
     """Convert PDF with retry logic for connection errors"""
     for attempt in range(max_retries):
@@ -99,9 +88,7 @@ def _build_parser(api_key: str):
         )
 
 
-# ---------------------------------------------------------------------------
 # Anthropic (Claude reads the PDF directly)
-# ---------------------------------------------------------------------------
 def _convert_pdf_anthropic(client: anthropic.Anthropic, pdf_path: Path) -> str:
     """Send one PDF to Claude as a document block and return the Markdown it writes back.
 
@@ -139,9 +126,7 @@ def _convert_pdf_anthropic(client: anthropic.Anthropic, pdf_path: Path) -> str:
     return "".join(block.text for block in message.content if block.type == "text")
 
 
-# ---------------------------------------------------------------------------
 # Shared folder loop
-# ---------------------------------------------------------------------------
 def _convert_all(convert_one: Callable[[Path], str]) -> str:
     """Run convert_one over every PDF in input_dir and write each result to output_dir.
 
@@ -195,9 +180,7 @@ def _convert_all(convert_one: Callable[[Path], str]) -> str:
     return summary
 
 
-# ---------------------------------------------------------------------------
 # Public entry points
-# ---------------------------------------------------------------------------
 def convert_pdf_to_markdown_openai() -> str:
     """Convert all PDF files in the input folder to Markdown using OpenAI's Vision API.
 

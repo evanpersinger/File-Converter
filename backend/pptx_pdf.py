@@ -7,7 +7,6 @@ the slides to PDF in output/. Requires LibreOffice to be installed.
 import os
 import glob
 import subprocess
-import sys
 
 # Get the directory where this script is located
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -73,7 +72,6 @@ def convert_pptx_to_pdf() -> str:
         try:
             # Get filename without extension
             filename = os.path.splitext(os.path.basename(pptx_file))[0]
-            pdf_file = os.path.join(output_folder, f"{filename}.pdf")
 
             # Use LibreOffice to convert PPTX to PDF
             # This requires LibreOffice to be installed

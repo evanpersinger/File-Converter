@@ -1,8 +1,6 @@
-"""Combine multiple files into a single output file.
+"""Combine the files in input/ into one file in output/.
 
-Reads files from input/, sorts them naturally (Q1, Q2, Q10), and merges by type:
-images and PDFs are combined into one PDF, and text files are concatenated.
-Writes the combined result to output/.
+Images and PDFs merge into a single PDF, text files are concatenated. Natural sort order.
 """
 
 import os

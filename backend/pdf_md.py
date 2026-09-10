@@ -1,21 +1,6 @@
-r"""Convert PDF files to Markdown.
+"""Convert PDFs in input/ to Markdown in output/, locally and for free.
 
-Strategy (per page, so mixed PDFs work):
-    - Searchable pages -> pymupdf4llm.to_markdown() for real markdown
-      (headings, lists, tables, code blocks).
-    - Scanned/image pages -> rendered at 300 DPI and read with tesseract OCR.
-Pages are stitched back together in original order.
-
-Math notation is normalized afterwards:
-    - LaTeX math (\( .. \), \[ .. \], $ .. $, $$ .. $$) is kept as real LaTeX,
-      with delimiters normalized to markdown's $ / $$ so math viewers render it.
-    - Loose notation in plain text (LaTeX commands like \alpha, ASCII operators
-      like <=, super/subscripts like x^2) is converted to unicode.
-Code spans/blocks are protected so identifiers aren't touched.
-
-English only for the OCR path: TESSERACT_LANG is 'eng', so a scanned page in another
-language comes back as whatever English words its shapes resemble rather than as an
-error. Searchable pages are unaffected, their text is read directly.
+Searchable pages go through pymupdf4llm, scanned pages through Tesseract OCR (English only).
 """
 
 import os
@@ -29,9 +14,7 @@ import pytesseract
 from PIL import Image
 from tqdm import tqdm
 
-# ---------------------------------------------------------------------------
 # Config
-# ---------------------------------------------------------------------------
 OCR_DPI = 300                      # 300 is the OCR sweet spot; 600 is 4x slower for little gain
 TEXT_MIN_CHARS = 20                # a page with fewer real chars is treated as scanned -> OCR
 TESSERACT_CONFIG = r"--oem 3 --psm 3"  # psm 3 = auto page layout, good for full pages
@@ -50,9 +33,7 @@ input_folder = os.path.join(script_dir, "input")
 output_folder = os.path.join(script_dir, "output")
 image_folder = os.path.join(output_folder, "images")
 
-# ---------------------------------------------------------------------------
 # Math normalization
-# ---------------------------------------------------------------------------
 SUPERSCRIPT_MAP = {
     "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵",
     "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹", "+": "⁺", "-": "⁻",
@@ -209,9 +190,7 @@ def normalize_math(text, ocr=False):
     return text
 
 
-# ---------------------------------------------------------------------------
 # PDF -> markdown
-# ---------------------------------------------------------------------------
 def _ocr_page(page):
     """Render a page to an image and OCR it."""
     pix = page.get_pixmap(dpi=OCR_DPI)
@@ -268,9 +247,7 @@ def pdf_to_markdown(pdf_path):
     return "\n\n".join(p for p in parts if p).strip() + "\n"
 
 
-# ---------------------------------------------------------------------------
 # Runner
-# ---------------------------------------------------------------------------
 def convert_pdf_to_markdown() -> str:
     """Convert every PDF in the input folder to Markdown in the output folder.
 

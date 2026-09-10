@@ -1,21 +1,6 @@
-# ss_txt.py
-"""Screenshot -> text converter (OCR).
+"""OCR the screenshots in input/ into one text file in output/. English only.
 
-Two modes:
-  - simple (default): OCR tuned for plain-text screenshots. Runs a few
-    preprocessing passes and keeps the most complete result.
-  - structured (--structured / --tables): OpenCV table detection, per-cell
-    OCR, heavy OCR-error correction, and `| table |` formatting for images
-    with tables or other structured layout.
-
-English only: Tesseract is called with lang='eng', so text in another language comes
-back as whatever English words its shapes resemble rather than as an error. The
-error corrections in fix_common_ocr_errors assume English too, and the ones that
-would rewrite ordinary words are limited to detected table cells.
-
-Usage:
-    python ss_txt.py               # plain text
-    python ss_txt.py --structured  # tables / structured content
+Default mode is plain text. Pass --structured for tables and other laid-out content.
 """
 
 import argparse
@@ -32,9 +17,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.gif', '.bmp', '.tiff', '.webp'}
 
 
-# ---------------------------------------------------------------------------
 # Shared cleanup
-# ---------------------------------------------------------------------------
 def join_continuation_lines(lines):
     """Join lines that clearly continue the same sentence.
 
@@ -90,9 +73,7 @@ def join_continuation_lines(lines):
     return fixed_lines
 
 
-# ---------------------------------------------------------------------------
 # Simple mode (plain-text screenshots)
-# ---------------------------------------------------------------------------
 def preprocess_image(image):
     """Produce several preprocessed variants of an image to improve OCR."""
     preprocessed_images = []
@@ -161,9 +142,7 @@ def convert_simple(image_path):
         return None
 
 
-# ---------------------------------------------------------------------------
 # Structured mode (tables / structured content)
-# ---------------------------------------------------------------------------
 def detect_table_structure(image):
     """Detect table structure and extract cell regions.
 
@@ -681,9 +660,7 @@ def convert_structured(image_path):
         return None
 
 
-# ---------------------------------------------------------------------------
 # Runner
-# ---------------------------------------------------------------------------
 def find_images(input_folder):
     return sorted(f for f in os.listdir(input_folder)
                   if Path(f).suffix.lower() in IMAGE_EXTENSIONS)
