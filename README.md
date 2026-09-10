@@ -68,6 +68,7 @@ python backend/agent.py
 - Set your API key in environment variables: `export OPENAI_API_KEY=your_api_key_here`
 - Or add it to your `.env` file: `OPENAI_API_KEY=your_api_key_here`
 - Note: OpenAI-compatible APIs may work but are not officially tested
+- The `convert_pdf_to_markdown_anthropic` tool additionally needs `ANTHROPIC_API_KEY`; the agent itself still runs on OpenAI
 
 **Features:**
 - Interactive conversation interface
@@ -171,22 +172,30 @@ python backend/pdf_md.py
 **System requirements (for OCR on scanned PDFs):**
 - Tesseract OCR (macOS: `brew install tesseract`)
 
-### openai_pdf_md.py
-Converts PDF files to Markdown using OpenAI's Vision API for high-quality conversion.
+### llm_pdf_md.py
+Converts PDF files to Markdown using an LLM (OpenAI's Vision API or Anthropic's Claude) for high-quality conversion.
 
 **Usage:**
 ```bash
-python backend/openai_pdf_md.py
+python backend/llm_pdf_md.py            # OpenAI (default)
+python backend/llm_pdf_md.py anthropic  # Claude
 ```
 
 **Python packages:**
-- vision-parse>=0.1.13
+- vision-parse>=0.1.13 (OpenAI path)
+- anthropic>=1.0 (Claude path)
 - python-dotenv>=1.1.1
 - openai>=2.7.1 (installed as dependency)
 
 **Configuration:**
 1. Create a `.env` file in the project root
-2. Add your OpenAI API key: `OPENAI_API_KEY=your_api_key_here`
+2. Add the key for whichever provider you want to use, or both:
+   - OpenAI: `OPENAI_API_KEY=your_api_key_here`
+   - Anthropic: `ANTHROPIC_API_KEY=your_api_key_here`
+
+The OpenAI path renders each page to an image and sends it to `gpt-4o-mini`. The Claude
+path sends the PDF itself to `claude-sonnet-5`, which reads PDFs natively (limit 32 MB
+and 600 pages per file). Both cost money and bill the key they use.
 
 **Setup:**
 All dependencies are installed automatically when you run `uv sync`
@@ -858,7 +867,7 @@ converter/
 │   ├── csv_xlsx.py         # CSV to Excel converter
 │   ├── csv_md.py           # CSV to Markdown converter
 │   ├── pdf_md.py           # PDF to Markdown converter (pymupdf4llm + OCR)
-│   ├── openai_pdf_md.py    # PDF to Markdown converter (AI-powered)
+│   ├── llm_pdf_md.py       # PDF to Markdown converter (LLM-powered, OpenAI or Claude)
 │   ├── ss_txt.py           # Screenshot to text converter (OCR; --structured for tables)
 │   ├── ipynb_pdf.py        # Jupyter notebook to PDF converter
 │   ├── md_pdf.py           # Markdown to PDF converter (Pandoc, enhanced)
@@ -922,10 +931,12 @@ they work the same no matter which directory you run from.
    - LibreOffice: `brew install --cask libreoffice` (for PowerPoint conversion)
    - mermaid-filter (for Mermaid diagrams in `md_pdf.py`): `pnpm add -g mermaid-filter`
 
-4. **Optional: Set up OpenAI API key** (for `openai_pdf_md.py` and `agent.py`):
+4. **Optional: Set up API keys** (for `llm_pdf_md.py` and `agent.py`):
    ```bash
-   # Create .env file
+   # Create .env file. OPENAI_API_KEY powers the agent and the OpenAI PDF converter,
+   # ANTHROPIC_API_KEY powers the Claude PDF converter. Add whichever you use.
    echo "OPENAI_API_KEY=your_api_key_here" > .env
+   echo "ANTHROPIC_API_KEY=your_api_key_here" >> .env
    ```
 
 ## Keeping Up to Date
@@ -976,7 +987,7 @@ the web UI never touches your real `backend/input/` and `backend/output/`.
 
 **Unavailable options** are greyed out with the reason on hover rather than being
 offered and then failing. That covers both a missing system dependency (Tesseract,
-Pandoc, LaTeX, LibreOffice, `OPENAI_API_KEY`) and a format your file simply cannot
+Pandoc, LaTeX, LibreOffice, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`) and a format your file simply cannot
 become.
 
 **Extension checking.** When you pick a file it is sent to `/api/detect`, which uses
@@ -1028,7 +1039,7 @@ exactly one file; Combine needs two or more.
 | R (.R) | R Markdown (.Rmd) | `R_Rmd.py` |
 | R Markdown (.Rmd) | PDF | `Rmd_pdf.py` |
 | Multiple files, one shared extension | Single file | `combine_files.py` |
-| PDF (AI-powered) | Markdown (.md) | `openai_pdf_md.py` |
+| PDF (LLM-powered) | Markdown (.md) | `llm_pdf_md.py` |
 
 ## Flows That Don't Work
 

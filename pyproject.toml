@@ -38,9 +38,10 @@ dependencies = [
     "uvicorn[standard]>=0.32",
     "python-multipart>=0.0.9",
 
-    # AI Agent & OpenAI
+    # AI Agent & LLM providers
     "openai-agents>=0.5.0",
     "openai>=2.7.1",
+    "anthropic>=1.0",
     "vision-parse>=0.1.13",
     "python-dotenv>=1.1.1",
 
@@ -140,7 +141,7 @@ only-include = [
     "backend/jpg_png.py",
     "backend/jpg_svg.py",
     "backend/md_pdf.py",
-    "backend/openai_pdf_md.py",
+    "backend/llm_pdf_md.py",
     "backend/pdf_md.py",
     "backend/pdf_png.py",
     "backend/png_pdf.py",
@@ -174,7 +175,7 @@ only-include = [
     "backend/jpg_png.py",
     "backend/jpg_svg.py",
     "backend/md_pdf.py",
-    "backend/openai_pdf_md.py",
+    "backend/llm_pdf_md.py",
     "backend/pdf_md.py",
     "backend/pdf_png.py",
     "backend/png_pdf.py",

@@ -30,7 +30,7 @@ from jpg_pdf import convert_jpg_to_pdf
 from jpg_png import convert_jpg_to_png
 from jpg_svg import convert_jpg_to_svg
 from md_pdf import convert_md_to_pdf
-from openai_pdf_md import convert_pdf_to_markdown_openai
+from llm_pdf_md import convert_pdf_to_markdown_anthropic, convert_pdf_to_markdown_openai
 from pdf_md import convert_pdf_to_markdown
 from pdf_png import convert_pdf_to_png
 from png_pdf import convert_png_to_pdf
@@ -141,6 +141,7 @@ agent = Agent(
         function_tool(convert_xlsx_to_csv),
         function_tool(convert_pdf_to_markdown),
         function_tool(convert_pdf_to_markdown_openai),
+        function_tool(convert_pdf_to_markdown_anthropic),
         function_tool(convert_pptx_to_markdown),
         function_tool(convert_pptx_to_pdf),
         function_tool(convert_heic_to_jpg),
@@ -211,6 +212,8 @@ agent = Agent(
     - convert_pdf_to_markdown: PDF -> Markdown (local, free, uses OCR for scanned pages)
     - convert_pdf_to_markdown_openai: PDF -> Markdown via OpenAI Vision (higher quality,
       slower, costs money, needs OPENAI_API_KEY). Only use when asked for the AI version.
+    - convert_pdf_to_markdown_anthropic: PDF -> Markdown via Anthropic's Claude (same
+      tradeoffs, needs ANTHROPIC_API_KEY). Only use when asked for the Claude version.
     - convert_pptx_to_markdown: PowerPoint -> Markdown
     - convert_pptx_to_pdf: PowerPoint -> PDF (needs LibreOffice)
     - convert_heic_to_jpg: HEIC -> JPG

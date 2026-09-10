@@ -276,7 +276,7 @@ def convert_pdf_to_markdown() -> str:
 
     Searchable pages become real Markdown; scanned pages fall back to OCR, handled
     page by page so mixed PDFs work. This runs locally and is free, unlike the
-    OpenAI Vision version in openai_pdf_md.py.
+    LLM-powered versions in llm_pdf_md.py.
 
     Returns:
         A summary of what was converted, suitable for showing to a caller.

@@ -9,8 +9,8 @@ uploaded one file would convert all of them. Instead of touching the real folder
 each request gets a scratch workspace under .webui_jobs/<uuid>/ and the converter
 modules are temporarily pointed at it.
 
-Every converter resolves its input/output directories in one of five ways, so there
-are five ways to redirect it. See the `via_*` helpers below.
+Every converter resolves its input/output directories in one of six ways, so there
+are six ways to redirect it. See the `via_*` helpers below.
 
 CONCURRENCY: redirection works by mutating module-level state, which is
 process-global. Two conversions running at once would corrupt each other's paths.
@@ -23,7 +23,8 @@ Run it:
 
 --loop asyncio is not optional if you want the OpenAI Vision conversion to work:
 vision_parse calls nest_asyncio.apply(), which cannot patch uvloop (the loop
-uvicorn[standard] picks by default). Every other conversion works either way.
+uvicorn[standard] picks by default). Every other conversion, including the Claude
+one, works either way.
 """
 
 from __future__ import annotations
@@ -62,6 +63,7 @@ import jpg_ocr
 import jpg_pdf
 import jpg_png
 import jpg_svg
+import llm_pdf_md
 import md_pdf
 import pdf_md
 import pdf_png
@@ -185,19 +187,17 @@ def via_file_attr(module, call: Callable):
     return invoke
 
 
-def openai_pdf_invoke(job_dir: Path, job_in: Path, job_out: Path, staged: Path):
-    """PDF -> Markdown via OpenAI Vision.
+def via_dir_globals(module, call: Callable):
+    """Module has `input_dir` / `output_dir` Path globals read at call time (llm_pdf_md).
 
-    openai_pdf_md is imported lazily, not at module scope, because vision_parse calls
-    nest_asyncio.apply() at import time and that raises under uvloop (which
-    uvicorn[standard] selects by default). Keeping it out of module scope means a bad
-    event loop breaks only this one conversion instead of preventing the server from
-    starting at all. Run with `--loop asyncio` for this conversion to work.
+    The OpenAI path in that module only imports vision_parse when it runs, so a uvloop
+    event loop breaks that one conversion at call time instead of at server startup.
+    Run with `--loop asyncio` for it to work.
     """
-    import openai_pdf_md
-
-    with patched(openai_pdf_md, input_dir=job_in, output_dir=job_out):
-        return openai_pdf_md.convert_pdf_to_markdown_openai()
+    def invoke(job_dir: Path, job_in: Path, job_out: Path, staged: Path):
+        with patched(module, input_dir=job_in, output_dir=job_out):
+            return call(staged)
+    return invoke
 
 
 def via_params(call: Callable):
@@ -223,6 +223,7 @@ DEPS: dict[str, Callable[[], bool]] = {
         which("soffice") or which("libreoffice") or _LIBREOFFICE_APP.exists()
     ),
     "openai_key": lambda: bool(os.environ.get("OPENAI_API_KEY")),
+    "anthropic_key": lambda: bool(os.environ.get("ANTHROPIC_API_KEY")),
 }
 
 DEP_LABELS = {
@@ -231,6 +232,7 @@ DEP_LABELS = {
     "latex": ("No LaTeX engine found", "brew install --cask mactex"),
     "libreoffice": ("LibreOffice is not installed", "brew install --cask libreoffice"),
     "openai_key": ("OPENAI_API_KEY is not set", "add OPENAI_API_KEY to the .env file"),
+    "anthropic_key": ("ANTHROPIC_API_KEY is not set", "add ANTHROPIC_API_KEY to the .env file"),
 }
 
 
@@ -314,10 +316,14 @@ REGISTRY: list[Conversion] = [
     Conversion((".pdf",), "pdf->png", "PNG", ".png",
                via_globals(pdf_png, lambda s: pdf_png.convert_pdf_to_png()),
                note="One PNG per page. Multi-page PDFs come back as a zip."),
-    Conversion((".pdf",), "pdf->md-ai", "Markdown (AI, costs money)", ".md",
-               openai_pdf_invoke,
+    Conversion((".pdf",), "pdf->md-ai", "Markdown (LLM: GPT-4o mini, costs money)", ".md",
+               via_dir_globals(llm_pdf_md, lambda s: llm_pdf_md.convert_pdf_to_markdown_openai()),
                requires=("openai_key",),
                note="Sends the PDF to OpenAI's Vision API. Slower, and it bills your key."),
+    Conversion((".pdf",), "pdf->md-claude", "Markdown (LLM: Claude Sonnet 5, costs money)", ".md",
+               via_dir_globals(llm_pdf_md, lambda s: llm_pdf_md.convert_pdf_to_markdown_anthropic()),
+               requires=("anthropic_key",),
+               note="Sends the PDF to Anthropic's Claude. Slower, and it bills your key."),
 
     # --- office --------------------------------------------------------------
     Conversion((".pptx",), "pptx->md", "Markdown", ".md",
