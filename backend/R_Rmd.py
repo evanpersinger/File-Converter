@@ -8,6 +8,10 @@ import os
 import sys
 from pathlib import Path
 
+# Default folders live next to this script, so `python backend/R_Rmd.py` finds
+# backend/input regardless of the shell's working directory.
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 
 def convert_r_to_rmd(r_path: str, output_path: str | None = None,
                      input_dir: str | None = None, output_dir: str | None = None) -> bool:
@@ -270,8 +274,8 @@ def main():
         parser = argparse.ArgumentParser(description="Convert R files to R Markdown")
         parser.add_argument("r_file", nargs="?", help="R file to convert (optional)")
         parser.add_argument("output_file", nargs="?", help="Output Rmd filename (optional)")
-        parser.add_argument("--input-dir", default="input", help="Input directory (default: input)")
-        parser.add_argument("--output-dir", default="output", help="Output directory (default: output)")
+        parser.add_argument("--input-dir", default=SCRIPT_DIR / "input", help="Input directory (default: backend/input)")
+        parser.add_argument("--output-dir", default=SCRIPT_DIR / "output", help="Output directory (default: backend/output)")
     except ImportError:
         pass
     

@@ -17,6 +17,10 @@ from docx import Document
 from docx.oxml.ns import qn
 import io
 
+# Default folders live next to this script, so `python backend/docx_pdf.py` finds
+# backend/input regardless of the shell's working directory.
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 
 # Create input and output directories if they don't exist
 def setup_directories(input_dir="input", output_dir="output"):
@@ -94,15 +98,13 @@ def para_to_html(para):
 def convert_docx_to_pdf(docx_path: str, output_path: str | None = None, input_dir: str | None = None, output_dir: str | None = None) -> bool:
     # Set default directories if not provided. Resolved relative to this script, not
     # the caller's working directory, so they are always backend/input and backend/output.
-    script_dir = Path(__file__).resolve().parent
-
     if input_dir is None:
-        input_dir = script_dir / "input"
+        input_dir = SCRIPT_DIR / "input"
     else:
         input_dir = Path(input_dir)
 
     if output_dir is None:
-        output_dir = script_dir / "output"
+        output_dir = SCRIPT_DIR / "output"
     else:
         output_dir = Path(output_dir)
 
@@ -281,8 +283,8 @@ def main():
     parser = argparse.ArgumentParser(description="Convert DOCX files to PDF")
     parser.add_argument("docx_file", nargs="?", help="DOCX file to convert (optional)")
     parser.add_argument("output_file", nargs="?", help="Output PDF filename (optional)")
-    parser.add_argument("--input-dir", default="input", help="Input directory (default: input)")
-    parser.add_argument("--output-dir", default="output", help="Output directory (default: output)")
+    parser.add_argument("--input-dir", default=SCRIPT_DIR / "input", help="Input directory (default: backend/input)")
+    parser.add_argument("--output-dir", default=SCRIPT_DIR / "output", help="Output directory (default: backend/output)")
     
     args = parser.parse_args()
     

@@ -14,6 +14,10 @@ from shutil import which
 from datetime import date
 import re
 
+# Default folders live next to this script, so `python backend/Rmd_pdf.py` finds
+# backend/input regardless of the shell's working directory.
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 
 def command_exists(cmd):
     return which(cmd) is not None
@@ -291,8 +295,8 @@ def main():
     parser = argparse.ArgumentParser(description="Convert R Markdown files to PDF")
     parser.add_argument("rmd_file", nargs="?", help="R Markdown file to convert (optional)")
     parser.add_argument("output_file", nargs="?", help="Output PDF filename (optional)")
-    parser.add_argument("--input-dir", default="input", help="Input directory (default: input)")
-    parser.add_argument("--output-dir", default="output", help="Output directory (default: output)")
+    parser.add_argument("--input-dir", default=SCRIPT_DIR / "input", help="Input directory (default: backend/input)")
+    parser.add_argument("--output-dir", default=SCRIPT_DIR / "output", help="Output directory (default: backend/output)")
     
     args = parser.parse_args()
     
