@@ -222,7 +222,7 @@ agent = Agent(
     - convert_jpg_to_pdf: JPG -> PDF
     - convert_jpg_to_ocr: JPG -> plain text via OCR
     - convert_png_to_pdf: PNG -> PDF
-    - convert_sql_files: SQL -> PDF with syntax highlighting
+    - convert_sql_files: SQL -> PDF (source printed as written in a monospace box)
     - convert_screenshots_to_text: screenshots/images -> one combined text file.
       Pass structured=True for tables or complex layouts.
 

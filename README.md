@@ -692,7 +692,7 @@ python backend/docx_pdf.py --input-dir myinput --output-dir myoutput
 - Custom input/output directories support
 
 ### sql_pdf.py
-Converts SQL files to PDF format with syntax highlighting and proper formatting.
+Converts SQL files to PDF: a title line, then the SQL source printed as written in a monospace code box. No syntax highlighting or reformatting.
 
 **Usage:**
 ```bash
@@ -705,19 +705,6 @@ python backend/sql_pdf.py file.sql [output.pdf]
 
 **Python packages:**
 - reportlab>=4.4.4
-
-**How it works:**
-1. Automatically processes ALL SQL files in the `input/` folder
-2. Formats SQL with proper indentation and keyword highlighting
-3. Creates PDF with syntax highlighting and clean formatting
-4. Saves PDF files to the `output/` folder
-5. Shows summary of successful/failed conversions
-
-**Features:**
-- SQL syntax highlighting
-- Proper code formatting and indentation
-- Clean PDF layout with title and formatted code blocks
-- Support for all SQL dialects (MySQL, PostgreSQL, SQLite, etc.)
 
 ### txt_pdf.py
 Converts text (.txt) files to PDF format with clean formatting.
