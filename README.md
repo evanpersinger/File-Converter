@@ -90,11 +90,13 @@ Batch converters take no arguments. Each converts every matching file in `input/
 returns a summary of what it did:
 
 `convert_csv_to_markdown`, `convert_csv_to_xlsx`, `convert_xlsx_to_csv`,
-`convert_pdf_to_markdown`, `convert_pdf_to_markdown_openai`, `convert_pptx_to_markdown`,
+`convert_pdf_to_markdown`, `convert_pdf_to_markdown_openai`,
+`convert_pdf_to_markdown_anthropic`, `convert_pptx_to_markdown`,
 `convert_pptx_to_pdf`, `convert_heic_to_jpg`, `convert_heic_to_png`,
-`convert_heic_to_markdown`, `convert_jpg_to_png`, `convert_pdf_to_png`,
-`convert_jpg_to_markdown`, `convert_jpg_to_pdf`, `convert_jpg_to_ocr`,
-`convert_png_to_pdf`, `convert_sql_files`, `convert_screenshots_to_text`
+`convert_heic_to_markdown`, `convert_jpg_to_png`, `convert_jpg_to_svg`,
+`convert_pdf_to_png`, `convert_jpg_to_markdown`, `convert_jpg_to_pdf`,
+`convert_jpg_to_ocr`, `convert_png_to_pdf`, `convert_png_to_svg`, `convert_sql_files`,
+`convert_screenshots_to_text`
 
 Single-file converters take a filename from `input/` plus an optional output name:
 
@@ -195,7 +197,18 @@ python backend/llm_pdf_md.py anthropic  # Claude
 
 The OpenAI path renders each page to an image and sends it to `gpt-4o-mini`. The Claude
 path sends the PDF itself to `claude-sonnet-5`, which reads PDFs natively (limit 32 MB
-and 600 pages per file). Both cost money and bill the key they use.
+per file). Both cost money and bill the key they use.
+
+**Page limit (Claude path):** roughly 100 pages per PDF, fewer for dense text or
+table-heavy PDFs. The whole PDF is converted in one request with output capped at 64K
+tokens, so a longer PDF gets cut off and fails, and you're still billed for what it
+wrote.
+
+**Rate limit (OpenAI path):** no length cap, since pages are converted one at a time,
+but every page goes out as an image, and a long PDF can hit OpenAI's tokens-per-minute
+rate limit. The script doesn't wait out a rate limit, so the PDF fails with no output,
+and you're still billed for the pages it got through. A 41-page PDF hit this on an
+account limited to 200K tokens per minute. For long PDFs, use the Claude path.
 
 **Setup:**
 All dependencies are installed automatically when you run `uv sync`
@@ -865,9 +878,11 @@ converter/
 │   ├── jpg_md.py           # JPG/JPEG to Markdown converter (OCR)
 │   ├── jpg_ocr.py          # JPG/JPEG to plain text converter (OCR)
 │   ├── jpg_png.py          # JPG/JPEG to PNG converter
+│   ├── jpg_svg.py          # JPG/JPEG to SVG converter (vector tracing)
 │   ├── heic_png.py         # HEIC to PNG converter
 │   ├── pdf_png.py          # PDF pages to PNG images
 │   ├── png_pdf.py          # PNG to PDF converter
+│   ├── png_svg.py          # PNG to SVG converter (vector tracing)
 │   ├── combine_files.py    # File combiner (PDFs, images, text)
 │   ├── pptx_pdf.py         # PowerPoint to PDF converter (LibreOffice)
 │   ├── pptx_md.py          # PowerPoint to Markdown converter

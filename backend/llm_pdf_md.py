@@ -121,7 +121,7 @@ def _convert_pdf_anthropic(client: anthropic.Anthropic, pdf_path: Path) -> str:
     if message.stop_reason == "refusal":
         raise RuntimeError("Claude declined to process this PDF")
     if message.stop_reason == "max_tokens":
-        raise RuntimeError("output was cut off, the PDF is too long for a single request")
+        raise RuntimeError("output was cut off, the PDF is too long (roughly 100 pages max, fewer if dense)")
 
     return "".join(block.text for block in message.content if block.type == "text")
 
@@ -205,6 +205,8 @@ def convert_pdf_to_markdown_anthropic() -> str:
 
     Higher quality than the local pdf_md.py converter, but slower and it costs money.
     Requires ANTHROPIC_API_KEY to be set in the environment or a .env file.
+    Handles roughly 100 pages per PDF, fewer for dense text or tables. Longer PDFs
+    hit the 64K output cap and fail.
 
     Returns:
         A summary of what was converted, suitable for showing to a caller.
