@@ -18,6 +18,7 @@ from openai.types.responses import ResponseTextDeltaEvent
 from combine_files import combine_files
 from csv_md import convert_csv_to_markdown
 from csv_xlsx import convert_csv_to_xlsx
+from docx_md import convert_docx_to_markdown
 from docx_pdf import convert_docx_to_pdf
 from heic_jpg import convert_heic_to_jpg
 from heic_md import convert_heic_to_markdown
@@ -142,6 +143,7 @@ agent = Agent(
         function_tool(convert_pdf_to_markdown),
         function_tool(convert_pdf_to_markdown_openai),
         function_tool(convert_pdf_to_markdown_anthropic),
+        function_tool(convert_docx_to_markdown),
         function_tool(convert_pptx_to_markdown),
         function_tool(convert_pptx_to_pdf),
         function_tool(convert_heic_to_jpg),
@@ -214,6 +216,8 @@ agent = Agent(
       slower, costs money, needs OPENAI_API_KEY). Only use when asked for the AI version.
     - convert_pdf_to_markdown_anthropic: PDF -> Markdown via Anthropic's Claude (same
       tradeoffs, needs ANTHROPIC_API_KEY). Only use when asked for the Claude version.
+    - convert_docx_to_markdown: Word -> Markdown (needs pandoc). Images are saved to a
+      <name>_images folder next to the Markdown.
     - convert_pptx_to_markdown: PowerPoint -> Markdown
     - convert_pptx_to_pdf: PowerPoint -> PDF (needs LibreOffice)
     - convert_heic_to_jpg: HEIC -> JPG

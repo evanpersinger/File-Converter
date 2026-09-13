@@ -33,6 +33,7 @@ from fastapi.responses import JSONResponse, Response
 import combine_files
 import csv_md
 import csv_xlsx
+import docx_md
 import docx_pdf
 import heic_jpg
 import heic_md
@@ -77,10 +78,10 @@ _LOCK = threading.Lock()
 # happened, we would be patching a different copy of the module than the one doing
 # the work, and conversions would silently write into site-packages. Fail loudly.
 _CONVERTER_MODULES = [
-    csv_md, csv_xlsx, docx_pdf, heic_jpg, heic_md, heic_png, html_pdf, ipynb_pdf,
-    jpg_md, jpg_ocr, jpg_pdf, jpg_png, jpg_svg, md_pdf, pdf_md, pdf_png, png_pdf,
-    png_svg, pptx_md, pptx_pdf, R_Rmd, Rmd_pdf, sql_pdf, ss_txt, txt_pdf, xlsx_csv,
-    combine_files,
+    csv_md, csv_xlsx, docx_md, docx_pdf, heic_jpg, heic_md, heic_png, html_pdf,
+    ipynb_pdf, jpg_md, jpg_ocr, jpg_pdf, jpg_png, jpg_svg, md_pdf, pdf_md, pdf_png,
+    png_pdf, png_svg, pptx_md, pptx_pdf, R_Rmd, Rmd_pdf, sql_pdf, ss_txt, txt_pdf,
+    xlsx_csv, combine_files,
 ]
 _stray = [m.__name__ for m in _CONVERTER_MODULES
           if Path(m.__file__).resolve().parent != BACKEND]
@@ -302,6 +303,10 @@ REGISTRY: list[Conversion] = [
     Conversion((".pptx",), "pptx->pdf", "PDF", ".pdf",
                via_globals(pptx_pdf, lambda s: pptx_pdf.convert_pptx_to_pdf()),
                requires=("libreoffice",)),
+    Conversion((".docx",), "docx->md", "Markdown", ".md",
+               via_globals(docx_md, lambda s: docx_md.convert_docx_to_markdown()),
+               requires=("pandoc",),
+               note="Documents with images come back as a zip, with the images in a folder."),
     Conversion((".docx",), "docx->pdf", "PDF", ".pdf",
                via_params(lambda s, i, o: docx_pdf.convert_docx_to_pdf(
                    str(s), None, input_dir=str(i), output_dir=str(o)))),

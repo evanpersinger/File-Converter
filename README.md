@@ -91,7 +91,7 @@ returns a summary of what it did:
 
 `convert_csv_to_markdown`, `convert_csv_to_xlsx`, `convert_xlsx_to_csv`,
 `convert_pdf_to_markdown`, `convert_pdf_to_markdown_openai`,
-`convert_pdf_to_markdown_anthropic`, `convert_pptx_to_markdown`,
+`convert_pdf_to_markdown_anthropic`, `convert_docx_to_markdown`, `convert_pptx_to_markdown`,
 `convert_pptx_to_pdf`, `convert_heic_to_jpg`, `convert_heic_to_png`,
 `convert_heic_to_markdown`, `convert_jpg_to_png`, `convert_jpg_to_svg`,
 `convert_pdf_to_png`, `convert_jpg_to_markdown`, `convert_jpg_to_pdf`,
@@ -667,6 +667,29 @@ python backend/jpg_md.py
 - Text cleaning and formatting
 - Sentence structure preservation
 
+### docx_md.py
+Converts Microsoft Word (.docx) files to Markdown using Pandoc.
+
+**Usage:**
+```bash
+python backend/docx_md.py
+```
+
+**System requirements:**
+- Pandoc (macOS: `brew install pandoc`)
+
+**How it works:**
+1. Automatically processes ALL DOCX files in the `input/` folder
+2. Converts each one to GitHub-flavored Markdown with Pandoc
+3. Saves `name.md` to the `output/` folder, plus a `name_images/` folder if the document has images
+4. Shows summary of successful/failed conversions
+
+**Features:**
+- Keeps headings, bold/italic, lists, links, and tables
+- Images are linked with relative paths, so the Markdown still works after you move or zip the output
+- No hard line wrapping, so the text pastes cleanly into other tools
+- In the web UI, a document with images downloads as a zip (the `.md` plus its images folder)
+
 ### docx_pdf.py
 Converts Microsoft Word (.docx) files to PDF format with proper table rendering, image extraction, and formatting preservation.
 
@@ -886,6 +909,7 @@ converter/
 │   ├── combine_files.py    # File combiner (PDFs, images, text)
 │   ├── pptx_pdf.py         # PowerPoint to PDF converter (LibreOffice)
 │   ├── pptx_md.py          # PowerPoint to Markdown converter
+│   ├── docx_md.py          # Word to Markdown converter (Pandoc)
 │   ├── docx_pdf.py         # Word to PDF converter
 │   ├── R_Rmd.py            # R to R Markdown converter
 │   ├── Rmd_pdf.py          # R Markdown to PDF converter
@@ -1008,7 +1032,7 @@ as a numbered list under the picker with a × to remove any entry. Convert works
 exactly one file; Combine needs two or more.
 
 **Multi-file output.** Conversions that produce several files (a multi-page
-`pdf_png.py` run, for example) come back as a zip.
+`pdf_png.py` run, or a Word document with images through `docx_md.py`) come back as a zip.
 
 ## Supported Conversions
 
@@ -1016,6 +1040,7 @@ exactly one file; Combine needs two or more.
 |------|-----|--------|
 | Markdown (.md) | PDF | `md_pdf.py` |
 | PDF | Markdown (.md) | `pdf_md.py` |
+| Word (.docx) | Markdown (.md) | `docx_md.py` |
 | Word (.docx) | PDF | `docx_pdf.py` |
 | PowerPoint (.pptx) | PDF | `pptx_pdf.py` |
 | PowerPoint (.pptx) | Markdown (.md) | `pptx_md.py` |
