@@ -209,8 +209,6 @@ export default function App() {
       </aside>
 
       <main>
-        <h1>File Converter</h1>
-
         {loadError && <p className="error">{loadError}</p>}
 
         <label

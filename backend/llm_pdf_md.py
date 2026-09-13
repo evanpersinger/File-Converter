@@ -101,6 +101,9 @@ def _convert_pdf_anthropic(client: anthropic.Anthropic, pdf_path: Path) -> str:
     with client.messages.stream(
         model=ANTHROPIC_MODEL,
         max_tokens=64000,
+        # Transcribing a PDF needs little reasoning. Low effort keeps thinking short, which
+        # is billed as output and counts against max_tokens.
+        output_config={"effort": "low"},
         messages=[{
             "role": "user",
             "content": [
