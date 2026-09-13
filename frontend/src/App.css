@@ -303,6 +303,19 @@ button:disabled {
   pointer-events: none;
 }
 
+/* Buttons on the outer edge of the page open their tooltip inward, so a narrow
+   window never clips it. Everything else stays centred. */
+.formats .tip:nth-child(odd)[data-tip]:hover::after {
+  left: 0;
+  transform: none;
+}
+
+.actions .tip:last-child[data-tip]:hover::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
 .muted {
   font-size: 0.9rem;
 }
